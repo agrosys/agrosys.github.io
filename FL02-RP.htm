@@ -1,0 +1,2937 @@
+<!DOCTYPE html>
+
+<!-- ******** NOT FOR PUBLIC CIRCULATION ******** -->
+<!-- This is a pre-publication development and consultation document only -->
+
+<!-- The name of this program is 'aSpacInter3G-RP.htm' (copyright IE Currah, February, 2018)-->
+<!-- This is the version of aSpacInter3G-R.htm which introduces the Gaussian p parameter -->
+<!-- Parameter p flattens the plant model bell peak and tends the bell shape towards cylindrical -->
+<!-- Also includes an new field operator derived from the yield/density equation of Overman et.al. (2011) -->
+
+<html>
+
+<head>
+
+<script>
+/*************** USERS MAY WISH TO EXPERIMENT WITH EDITING THE FOLLOWING DEFAULT SETTINGS ****""***********/
+var YFmodel = 1;	    // The field operator.  1 = Original, 2 = Overman y/d, see 'Help and explanation'
+var fodExclusCrit = 0.001;  // See 'Safe computation limits' in the 'Help and explanation' facility
+var ymaxXz = 10.0;          // This is the 'Y-max' value above the user's table on the main screen
+var wmaxdef = 0.3;          // This is the default value in the 'W' column of the user's table
+var rgrXz = 0.15;           // The default value in the 'rgr' column of the user's table
+var startWt = 0.001;        // The default value in the 'w-start' column (not to be < 0.0001 in table)
+var dp = 0;                 // Decimal places of w% column in users table, see 'Help and explanation'
+var pflat = 1.0;            // Gaussian p parameter which flattens peak of bell curve
+
+/**************** USERS MAY COPY BACK THESE ORIGINAL DEFAULT VALUES AFTER EXPERIMENTATION *****************/ 
+//var YFmodel = 1;
+//var fodExclusCrit = 0.001;
+//var ymaxXz = 10.0;
+//var wmaxdef = 0.3;
+//var rgrXz = 0.15;
+//var startWt = 0.001;
+//var dp = 0;
+//var pflat = 1.0; 
+
+/************************* THIS IS THE END OF THE USER'S EDITABLE SECTION ***************************/
+</script>
+
+<title>Y-field Plant Space and Crop Development v. FL02-RP</title>
+
+<META HTTP-EQUIV="Pragma" CONTENT="no-cache"> 
+<META HTTP-EQUIV="Expires" CONTENT="-1">
+
+<!-------------------------------- STYLE -------------------------->
+
+<style>
+
+body {
+	background-color: #C1B7A4;
+	font-family: arial, helvetica;
+	font-size: small;
+}
+
+#header {
+	height: 20px;
+	text-align: center ;
+	background: #00C000;
+	color: white;
+	font-weight: bold;
+}
+
+.container {
+	position: relative;
+	width: 900px;
+	margin: auto;
+}
+
+.container div {
+	height: 535px;
+}
+
+.column {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	 box-sizing: border-box;
+	font-size: larger;
+}
+
+.column-left {
+	width: 0%;
+	background: #999999;
+	left: 0;
+	position: absolute;
+	padding-left: 0px;
+	color: yellow;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	 box-sizing: border-box;
+}
+
+.column-center {
+	width: 600px;
+	background: #C1B7A4;
+	margin-left: 0%;
+	position: absolute;
+	padding-left: 0px;
+	color: black;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	 box-sizing: border-box;
+}
+
+.column-right {
+	width: 400px;
+	right: 0;
+	position: absolute;
+	background: #C1B7A4;
+	padding-left: 0px;
+	color: black;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	 box-sizing: border-box;
+}
+
+#footer {
+	position: relative;
+	height: 20px;
+	text-align: center ;
+	background: #00C000;
+	clear: both;
+}
+
+canvas  {
+	background:lightgray;
+	display: none;
+}
+
+table, th, td {
+	border: 3px solid #00C000;
+	border-collapse: collapse;
+	text-align: left;
+	padding: 5px;
+	color: black;
+	background-color: #C1B7A4;
+}
+
+#table2, th, td {
+	font-size: small;
+	font-weight: bold;
+}
+
+#denstab, td {
+	margin: auto;
+	border: 1px solid black;
+	font-weight: normal;
+	text-align: center;
+}
+
+#dc {
+	background:beige;
+}
+
+#c2 {
+	width: 45px;
+	height: 25px;
+	padding: 0px;
+	text-align: center;
+	border: 0px;
+	border-color: lightgray;
+}
+
+#c3 {
+	width: 45px;
+	height: 25px;
+	padding-left: 1px;
+	text-align: center;
+	font-weight: bold;
+}
+
+#c5 {
+	width: 65px;
+	height: 23px;
+	padding: 0px;
+	text-align: center;
+	border: solid 0px;
+	border-color: black;
+}
+
+#text1 {
+	width: 45px;
+	height: 18px;
+	border: 0px;
+	margin: 0px;
+	padding: 0px;
+	text-align: center;
+	background: lightgray;
+	visibility: hidden;
+}
+
+#text2 {
+	color: transparent;
+	}
+
+#w1 {   color: red;
+	font-weight: bold;
+}
+
+input[type="text"] {
+	width: 100%;
+	height: 100%;
+	border: 0px;
+	background: lightgray;
+	text-align: center;
+}
+
+select {
+	width: 100%;
+	height: 100%
+	color: black;
+	background: lightgray;
+}
+
+#tabwin {
+	position: block;  
+	left: 0;          
+	right: 10;         
+	top: 0px;        
+	width: 80%;      
+	height: 350px;
+	/*overflow: scroll;*/
+	overflow-y: auto;
+	background: #C1B7A4;
+	opacity: 1.0;
+	/*z-index: -1;*/    /* Initially invisible */
+	border: 0px solid #73AD21;
+	padding: 0px;
+	}
+
+#ringdata {
+	position: fixed;  
+	left: 0;          
+	right: 0;         
+	top: 20px;        
+	width: 350px;
+	margin: auto;  
+	max-width: 100%;  
+	background: beige;
+	opacity: 1.0;
+	z-index: -1;    /* Initially invisible */
+	border: 3px solid #73AD21;
+	padding: 10px;
+	}
+
+#help01 {
+	position: fixed;   /* Take it out of the flow of the document */
+	left: 0;           /* Left edge at left for now */
+	right: 0;          /* Right edge at right for now, so full width */ 
+	top: 20px;         /* Move it down from top of window */
+	width: 500px;      /* Give it the desired width */ 
+	height: 500px;
+	margin: auto;      /* Center it */
+	overflow: scroll;
+	max-width: 100%;   /* Make it fit window if under 500px */
+	background: beige;
+	opacity: 1.0;
+	z-index: -1;    /* Initially invisible */
+	border: 3px solid #73AD21;
+	padding: 10px;
+}
+
+#help02 {
+	position: fixed;  
+	left: 0;          
+	right: 0;         
+	top: 20px;        
+	width: 380px;
+	margin: auto; 
+	max-width: 100%;  
+	background: beige;
+	opacity: 1.0;
+	z-index: -1;    /* Initially invisible */
+	border: 3px solid #73AD21;
+	padding: 10px;
+}
+
+#warning01 {
+	position: fixed;  
+	left: 0;          
+	right: 0;         
+	top: 20px;        
+	width: 350px;      
+	height: 130px;
+	margin: auto; 
+	max-width: 100%;  
+	background: beige;
+	opacity: 1.0;
+	z-index: -1;    /* Initially invisible */
+	border: 3px solid #73AD21;
+	padding: 10px;
+}
+
+#plantDenNote {
+	position: fixed;  
+	left: 0;          
+	right: 0;         
+	top: 20px;        
+	width: 350px;
+	margin: auto;  
+	max-width: 100%;  
+	background: beige;
+	opacity: 1.0;
+	z-index: -1;    /* Initially invisible */
+	border: 3px solid #73AD21;
+	padding: 10px;
+}
+
+#button1 {
+	margin: 0px;
+	paddng: 0px;
+	}
+
+#button2 {
+	margin: 0px;
+	paddng: 0px;
+	z-index: -10;
+	}
+
+#subfoot {
+	width: 900px;
+	margin: auto;
+	background: lightgray;
+}
+
+#inclusion { 
+	color: #C1B7A4;
+	font-size: small;
+}
+
+a.class1 {color:black;}
+
+a.class1:hover {
+	font-weight: bold;
+	color: red;
+	text-decoration: underline; 
+}
+
+table#t01, th, td {
+	margin: auto;
+    	padding-left: 5px;
+    	padding-right: 5px;
+    	padding-top: 3px;
+    	padding-bottom: 3px;
+    	text-align: center;
+    	border: 1px solid black;
+    	border-collapse: collapse;	
+}
+
+table#t01 th {
+    	background-color: beige;
+    	color: black;	
+}
+
+table#t01 tr td:nth-child(-n+5) {
+	 background-color: beige;
+}
+
+</style>
+
+
+</head>
+
+<!---------------------------HTML BODY -------------------------->
+
+<!-- (copyright IE Currah, Oct. 16) -->
+
+<body onload="showstate()" onclick="mouseClickedAnywhere()";>
+<div class="container">
+   	
+<div id="header">Y-field Plant Space and Crop Development Model&nbsp;&nbsp;&nbsp; ( v. FL02-RP )</div>
+		
+<div class="column">
+
+<!--- LEFT --->
+   			
+<div class="column-left">
+			
+</div>
+
+<!--- MIDDLE --->
+   			
+<div class="column-center">
+				
+<p style="width: 80%; margin-top: 5px; margin-bottom: 5px"><b>BEGIN HERE.</b>
+<span style="font-size: 90%;">First <b>maximise</b> the window. Next note the interaction plane representing an area of 
+land and select below the size of the area in metres.
+Finally, select a number of plants and confirm. HELP will then appear.</span></p>
+
+<table id="table1">		
+<tr style="height: 35px">
+<td>
+Plant interaction plane size (m)
+</td>
+<td>
+<select id="plotscale" onchange="getscale()">
+  <option value="0.25">0.25 x 0.25</option>
+  <option value="0.5">0.5 x 0.5</option>
+  <option value="1">1 x 1 </option>
+  <option value="2" selected>2 x 2</option>
+  <option value="4">4 x 4</option>
+  <option value="8">8 x 8</option>
+  <option value="16">16 x 16</option>
+  <option value="32">32 x 32</option>
+</select>
+</td>
+</tr>
+<tr style="height: 35px">
+<td>
+Total number of plants involved
+</td>
+<td>
+<select id="numplants" onchange="orgplants()">
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3" selected>3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+  <option value="9">9</option>
+  <option value="10">10</option>
+  <option value="11">11</option>
+  <option value="12">12</option>
+  <option value="13">13</option>
+  <option value="14">14</option>
+  <option value="15">15</option>
+  <option value="r3">Ring patterns</option> // *+* edit in 2 places *+*
+  <option value="ay">11x11 array</option>   // *-* edit in 2 places *-*
+</select>
+</td>
+</tr>
+</table>
+
+<table style="border-collapse: collapse; border: 0px; width: 482px">
+<tr style="border: 0px solid">
+
+<td id="text2" style="padding: 0px; margin: 0px; border: 0px; width: 148px">Y-max =<input id="text1" placeholder=':input' value="0.000" 
+ ></td>
+
+<td style="padding: 0px; margin: 0px; border: 0px; width: 160px;"><input id="button1" type="button" value="Click to confirm" onclick="writeTable2()"></td>
+
+<td style="padding: 0px; margin: 0px; border: 0px;"><input id="button2" type="button" value="Click for HELP and explanation" onclick="mainhelp()"></td>
+
+</tr>
+</table>
+			
+</div>
+
+<!--- RIGHT --->
+
+<div class="column-right">
+				
+<textarea id="scaledata" rows="1" style="margin-top: 10px; font-family:arial">
+Scale ...
+</textarea>
+<!--  DO NOT CHANGE CANVAS WIDTH - it affects scaling calculations  -->
+<canvas id="iplaneCanvas" height="400" width="400" onmousemove="showCoords(event)">
+Your browser does not support the HTML5 canvas tag.  Please abandon this application.
+</canvas>
+
+<textarea id="currentXZ" rows="1" style="font-family:arial">
+x z coordinates
+</textarea>
+
+<textarea id="mouseOnPlane" rows="1" style="font-family:arial">
+Mouse events
+</textarea>
+
+<textarea id="runMessage" rows="1" style="font-family:arial">
+Run messages
+</textarea>
+		
+</div>
+		
+</div>
+
+<!--- FOOT --->
+   	
+<div id="footer">
+
+<table id="footertable" style="margin: auto; border-collapse: collapse; border: 0px; width: 100%;">
+<tr style="border: 0px">
+<td style="width: 500px; margin: 0px; padding: 0px; border: 0px; text-align: center; background: #00C000">
+<input id="button4" type="button" onclick="simstart();" value="Start simulation" />
+<input id="button5" type="button" onclick="simstop()" value="Halt simulation" />
+<input id="button6" type="button" onclick="warning01()" value="New simulation" />
+&nbsp;&nbsp;&nbsp;<span style="font-size: 85%">Reverse growth:</span>
+<input id="check1" type="checkbox" name="RG" style="vertical-align: middle" value="no">
+
+</td>
+<td style="width: 400px; margin: 0px; padding: 0px; border: 0px; text-align: center; background: #00C000"><input  id="button3"  type="button" onclick="devset();" value="Preset spacing" /></td>
+</tr>
+</table>
+</div>
+
+</div>
+
+<div id="ringdata">
+
+
+<div style="text-align: right; font-size: 80%"><a href="#" onclick="startNewSim()">Exit and re-start</a></div>
+<div style="text-align: center; font-size: 120%; font-weight: bold">Ring radius selector</div>
+
+<p>The table gives the radii in <b>millimetres</b> of plants surrounding a single central plant in  
+the ring-like arrangements described by Benjamin (1993, see Help and Explanation). 
+These radii are only for a plane size of <span style="color: red">1x1 metres</span>. 
+Other plane sizes give radii in proportion to scale.</p>
+
+<table id="t01">
+
+<tr>
+<th style="font-size: 80%; font-weight: normal;">Treatment</td>
+<th>Ring 1</td>
+<th>Ring 2</td>
+<th>Ring 3</td>
+<th style="padding: 12px; font-size: 80%; font-weight: normal;">Choice</td>
+</tr>
+
+<tr>
+<td>1</td>
+<td>10</td>
+<td>-</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(1, 10, 0, 0)">select</td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>30</td>
+<td>-</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(2, 30, 0, 0)">select</td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>50</td>
+<td>-</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(3, 50, 0, 0)">select</td>
+</tr>
+
+<tr>
+<td>4</td>
+<td>10</td>
+<td>60</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(4, 10, 60, 0)">select</td>
+</tr>
+
+<tr>
+<td>5</td>
+<td>10</td>
+<td>80</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(5, 10, 80, 0)">select</td>
+</tr>
+
+<tr>
+<td>6</td>
+<td>10</td>
+<td>100</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(6, 10, 100, 0)">select</td>
+</tr>
+
+<tr>
+<td>7</td>
+<td>30</td>
+<td>60</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(7, 30, 60, 0)">select</td>
+</tr>
+
+<tr>
+<td>8</td>
+<td>30</td>
+<td>80</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(8, 30, 80, 0)">select</td>
+</tr>
+
+<tr>
+<td>9</td>
+<td>30</td>
+<td>100</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(9, 30, 100, 0)">select</td>
+</tr>
+
+<tr>
+<td>10</td>
+<td>50</td>
+<td>60</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(10, 50, 60, 0)">select</td>
+</tr>
+
+<tr>
+<td>11</td>
+<td>50</td>
+<td>80</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(11, 50, 80, 0)">select</td>
+</tr>
+
+<tr>
+<td>12</td>
+<td>50</td>
+<td>100</td>
+<td>-</td>
+<td><a href="#" class="class1" onclick="ringrad(12, 50, 100, 0)">select</td>
+</tr>
+
+<tr>
+<td>13</td>
+<td>10</td>
+<td>80</td>
+<td>120</td>
+<td><a href="#" class="class1" onclick="ringrad(13, 10, 80, 120)">select</td>
+</tr>
+
+<tr>
+<td>14</td>
+<td>30</td>
+<td>80</td>
+<td>120</td>
+<td><a href="#" class="class1" onclick="ringrad(14, 30, 80, 120)">select</td>
+</tr>
+
+<tr>
+<td>15</td>
+<td>50</td>
+<td>80</td>
+<td>120</td>
+<td><a href="#" class="class1" onclick="ringrad(15, 50, 80, 120)">select</td>
+</tr>
+
+</table>
+
+</div>
+
+<!--------- MAIN HELP PAGE --------->
+
+<div id="help01">
+<a name="helptop">
+<style>
+#hn1 {	width: 100%; border: 1px solid black;}
+#hn2 { 	border: 0px solid black;}
+#hn3 { 	border: 0px solid black; background-color: beige;}
+#hn4 {  border: 0px solid black; background-color: beige; font-size: smaller;}
+</style>
+
+<table id="hn1">
+
+<tr id="hn2">
+
+<td id="hn4" style="text-align: left">
+<a href="#overview">Overview of Y-field theory</a>
+</td>
+
+<td id="hn4" style="text-align: center">
+<a href="#printit">How to print this document</a>
+</td>
+
+<td id="hn3" style="text-align: right">
+<a href="#" onclick="closemainhelp()">Exit Help</a>
+</td>
+
+</tr>
+
+<tr id="hn2">
+
+<td id="hn3" style="text-align: left">
+<a id="ringlink" href="#rings"><b>Ring pattern section</b></a>
+</td>  
+
+<td id="hn3" style="text-align: center">
+<a id="arraylink" href="#array"><b>Rectangular array section</b></a>  <!--Triggered in mainhelp()-->
+
+<a id="startsimlink" href="#stsim"></a>  <!--Blind link triggered in subhelp()-->
+<a id="safecomp" href="#safety"></a>  <!--Blind link triggered in subhelp()-->
+</td>
+
+<td id="hn3" style="text-align: right">
+<a href="#download"><b>Download section</b></a>
+</td>
+
+
+</tr>
+
+</table>
+
+
+<p style="text-align: center; font-size: large"> <br />Main help section </p>
+
+<p><b>To move plant symbols:</b>&emsp;<br /><br />In the Interaction Plane on the right, click on the coloured plant symbol, raise your finger (do not drag), move the mouse pointer to the desired position, click again and raise your finger.  The plant centre symbol will then move to the new position.<br /><br />The original positions of the plants may be restored by clicking the <u>Preset spacing</u> button on the bottom bar.<br /><br /><u>Alternatively</u> you may move the plant symbols by changing their location coordinates in the User's Table on the left. </p>
+
+<p><b>To remove plant symbols:</b>&emsp;As above click on the plant symbol then move the pointer anywhere off the interaction plane and click again.  Alternatively set the <b>W</b> value in the users table to zero.   Plant symbol removal facilitates the simulation of unwanted gaps in a regular row of plants.   NOTE that the Preset spacing button is disabled after doing this. </p>
+
+<p><a name="safety"><b>Safe computation limits.</b>&emsp;<br /><br />Following a click on 'Start simulation', safe limits are shown by <b>light grey</b> areas on a <b>dark grey</b> background within the interaction plane. The computation is only safe when the ENTIRE edge of the light grey area is free from the borders of the square interaction plane.   Note that if the entire plane is either light grey or dark grey the computation is not safe.  Both light and dark areas must be visible to ensure accurate results.
+<br /><br />
+<u>Explanation.</u>  The edge of the light grey area is the limit of computation beyond which it is deemed that the Y-field is too small to be significant and is therefore ignored.  The limit is held in a computation variable called 'fodExclusCrit' which is currently set at 0.001 Kg/sq m and can be changed by editing the Javascript near the top of the open computer source code.   The variable is set at a level in which no change in the results can be observed by setting it at a lower level and small differences may appear at a higher level.   Interested users are encouraged to experiment with this value. </p>
+
+<p><b>The User's Table columns, 'Y-max' and editable code parameters</b></p>
+
+<p><b>Note:</b>&emsp;In the displayed table <u>inputs</u> are in plain type and <u>outputs</u> are in bold type. The value in each input cell may be individually edited before starting a simulation.  Alternatively the default value of an <u>entire column</u> may be changed by editing the Javascript near the top of the open computer source code (see below).</p>
+
+<p><b>Y-max.</b>&emsp;The maximum yield of biomass that the land will support in any given growing season (input, constant, kilograms/m.sq.).</p>
+<p><b>Plant.</b>&emsp;The number and colour code identifying a particular plant and its centre point on the interaction plane.</p>
+<p><b>W.</b>&emsp;At any particular time, the weight of a free-growing plant not close enough to any other plant to be sharing resources  (input, constant, kilograms).</p>
+<p><b>rgr.</b>&emsp;The growth relative to current weight at any time during exponential phase (input, constant, g/g/day = 1/days).</p>
+<p><b>w-isol.</b>&emsp;The weight that an isolated plant reaches at a particular time t; identical with W (above) except during during dynamic simulation (output, kilograms).</p>
+<p><b>wt%.</b>&emsp;The weight of any plant at time t compared with an isolated plant at time t expressed 
+as percentage.  A decimal places setting of zero improves readability of rapidly changing values but masks
+a small (< 0.2%) increase above 100% when plant weights are very small; probably summation rounding error. (output)</p>   
+<p><b>x-posn.</b>&emsp;The x-axis coordinate of the centre of a plant, (input, variable, metres).</p>
+<p><b>z-posn.</b>&emsp;The z-axis coordinate of the centre of a plant (input, variable, metres).</p>
+<p><b>t-start.</b>&emsp;The starting time of growth simulation of a plant. e.g. 0 is day of the <i>earliest</i> 
+plant, 1 is one day after the the earliest plant, 2 is two days after and so on. (input, variable, days).</p>
+<p><b>w-start.</b>&emsp;The initial weight of the seed or transplant (input, variable between plants, kilograms).</p>
+<p><b>wt.</b>&emsp;The weight of the plant at any time during simulated growth (output, variable, kilograms).
+This is the main result of the simulation.</p>
+
+<p><b>Editable code parameters.</b>&emsp;Very near the top of the Javascript code there is a list of parameters which may be readily edited by users without any knowledge of Javascript.  These parameters are clearly labelled and they include two which are of particular theoretical significance.   The first is for the selection of either the original field operator model or the alternative model adapted from the work of Overman et. al. (2011).  The second is a value which alters the shape of the Gaussian bell plant model.  For further explanation see the documentation which accompanies this program.</p>
+
+<p><b>The command buttons</b>&emsp;All simulations are controlled by the following buttons on the command bar at the foot of the window.	</p>
+
+<p id="stsim"><u>Start simulation.</u><br /><br />This gives an immediate result of the Y-field model at a particular point in time. It shows each plant weight (<b>wt</b>) compared with its free-growing version (<b>W</b>) which is not close enough to any other plant to be sharing resources (see above).  Note the darker grey areas and the lighter grey areas surrounding the plant centre symbols on the i-plane.  For accurate results both dark and light grey areas should be visible and the light grey area(s) should not touch the borders of the i-plane (see 'Safe computation limits' above). You can choose from the dialogue to stop the simulation at this point or to continue. <br /><br />
+
+   If you continue, the simulation will enter a dynamic mode in which <b>W</b> now represents the <u>maximum value</u> that free-growing plant weight (<b>w-isol</b>) can reach and daily increments (<b>dw</b>) in <b>w-isol</b> follow the well-known logistic model: <b>dw = rgr * (W - (w-isol))</b>.  During simulation and after each day's <b>dw</b> has been calculated, <b>wt</b> is evaluated from the incremented <b>w-isol</b> and <b>Y-max</b> using the Y-field model. During simulation note that growth in <b>wt</b> is at first rapid but as <b>w-isol</b> approaches <b>W</b> growth slows to a stand-still even though the day-by-day simulation continues until halted.  Note also that the attenuation of growth of <b>wt</b> is a function of <u>both</u> the time-based logistic model <u>and</u> the space-based Y-field model. <br><br>
+   
+
+  If the simulation is not halted the weights eventually reach a steady equilibrium reflecting any variations of starting time, starting weight and relative growth rate which you may have set up, provided that <u>Reverse growth</u> has not been selected (see below).&nbsp;&nbsp;&nbsp;
+<a style="font-size: 90%; font-weight: bold" href="#" onclick="closemainhelp()">Click to exit Help</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a style="font-size: 90%; font-weight: bold" href="#helptop">Click for top of Help</a></p>
+
+<p><u>Halt simulation.</u>&emsp;The user may halt the day-by-day simulation at any time in order to inspect transient results.   Clicking 
+<u>Start simulation.</u> will resume the day-by-day procedure.</p>
+
+<p><u>New simulation.</u>&emsp;When clicked this button will produce a dialogue warning the user that data will be lost and offering  to cancel this request or to start a completely new simulation.  NOTE that the program can be rapidly restarted without the data loss warning by simply clicking the browser's reload button.</p>
+
+<p><u>Reverse growth.</u>&emsp;During day-by-day sequential growth the y-field will allow the plants that have earlier starting times or larger starting weights or relative growth rates to overshoot their final equilibrium weights.   These overshot weights then diminish towards the equilibrium values determined solely by spatial interaction.  Many people would consider this reverse growth to be unrealistic and that precocious plants should remain larger than their neighbours.   Therefore in this application the onset of reverse growth is detected and prevented unless the user wishes to allow it by clicking the <u>check box.</u></p>
+
+<p><u>Preset spacing.</u>&emsp;The action of this button is described under 'To move plants' near the top of this help document.</p>
+
+<p><b>The interaction plane.</b>&emsp;This is the simulated area of land on which plants might interact.  
+The interaction plane is dimensioned x and z and is divided into 40,000 invisible tiny squares delta x-z.  
+The length of one side of a delta x-z square is the SPATIAL RESOLUTION of the simulation. 
+The duration of the simulation's day-by-day time step is the TEMPORAL RESOLUTION.<br />
+ 
+<p id="demo"></p>
+<input type="button" onclick="closemainhelp();" value="Click to exit" />
+<br /><br />
+
+<p id="rings" style="text-align: center; font-size: large">Ring pattern section</p>
+
+<p>Here the user is offered an initial arrangement of symbols which consists of a central plant surrounded by a series of one, two or three concentric rings of plants.  In common with this program's standard linear arrangement, each symbol in the ring arrangement may be moved to a new position before starting the simulation (as described at the top of this document).</p>
+
+<p>These ring patterns are identical with those described as treatment numbers 1 - 15 in the excellent experiment carried out on carrots by Benjamin (1993).  Although the patterns remain the same at all the scales offered by this program, only the 1 x 1 metre plain size selection produces the set of absolute distances between plant centres described by Benjamin.   Choosing a scale other than the 1 x 1 metre selection therefore simulates the plant growth responses which Benjamin might have recorded if he had grown plants at that particular scale of choice.   While such a choice might be interesting it must be remembered that the rules about safe computation described above still apply especially at the smaller selections.</p>
+
+<p>The ring patterns are included here because individual plant growth and spacing data is rare in the literature and Benjamin's experiment was sufficiently precise and reliable to test the predictions of the Y-field theory.   NOTE that Benjamin's experimental results are NOT included in this program;  only his planting layouts appear here.   The user is free to compare the predictions of this program with the results in Benjamin's (1993) paper.
+<a style="font-size: 90%; font-weight: bold" href="#" onclick="closemainhelp()">Click to exit Help</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a style="font-size: 90%; font-weight: bold" href="#helptop">Click for top of Help</a></p>
+</p>  
+<br /><br />
+
+<p id="array" style="text-align: center; font-size: large">Rectangular array section</p>
+
+<p><b>Note 1.</b>   First time users are recommended to try some of the individual plant (1 - 12 options) before deploying this 2-dimensional array facility.  To return, click the New Simulation button below.</p>
+
+<p><b>Note 2.</b>  This facility should not be used as a practical crop planning tool.   Instead it is solely intended to enable a direct comparison of results between this model and those which do not distinguish between individual plants such as the well-known reciprocal plant weight-density equation (Shinozaki and Kira, 1956).  A practical version of this model will be developed elsewhere.</p>
+<br />
+
+<p><b>The simulation strategy</b></p>
+
+<p>From the point of view of individual plants, field crops are grown in very large blocks which approximate to infinite arrays of plants.   Here, these infinite arrays are simplified and idealised, being represented by small finite arrays of plants arranged on a rectangular grid system.    By assuming that all the plants are identical then any single one of them may represent all the others.   Provided that the finite array is large enough, a single central plant is not influenced by the edges of the array and it may therefore represent the entire idealised crop to a very close approximation.</p>
+
+<p>Therefore the method used here is to apply the model's equations to all the plants in the finite array but only record results from a single central representative plant which is a safe distance from the edges of the array.</p>
+
+<p><u>The safe distance circle.</u>  To ensure that the representative plant is always at a safe distance from the edges of the array, it is surrounded by a visible circle beyond which the presence or absence of other plants is calculated to be of negligible influence (typically with a Y-field of less than 1 gram per square metre).  Therefore only those plant layouts with at least one plant symbol on or outside the circle in every direction should be considered safe. See also 'Safe computation limits' in the 'Main Help' section above.</p>
+
+<p><u>The circle is not visible.</u>  If the central plant weight is close to its maximum (i.e. W) value then the layout is safe because the circle is just too small to be seen.   However, if the central plant weight is clearly less than W then the layout is not safe because the boundary of the circle is beyond the visible limits of the interaction plane.</p>
+<br />
+
+<p><b>Definition of Users Table Columns</b></p>
+
+<p><b>Note:</b> In the displayed table inputs are in plain type and outputs are in bold type.</p>
+
+<p><b>Y-max.</b> The maximum yield of biomass that the land will support in any given growing season (input, constant, kilograms/sq.m).</p>
+
+<p><b>W.</b> At any particular time, the weight of a free-growing plant not close enough to any other plant to be sharing resources (input, constant, kilograms).</p>
+
+<p><b>Plant density.</b>   This is the plant population density, calculated as the reciprocal of the area surrounding each plant centre symbol.  It is provided for comparison with other models, see Note 2 above (number of plants/sq.m).</p>
+
+<p><b>Aspect ratio.</b>  This was formerly known as 'rectangularity' and is the ratio of the distance between neighbouring  plants along the row and the distance between rows or vice versa.  Here it is expressed as the longer distance divided by the shorter distance.   This value is identical with the aspect ratio of the rectangular area surrounding each plant centre (a unitless number).<p>
+
+<p><b>Plant spaces x and z.</b>  The distances between neighbouring plants in the x direction and z direction, see Density and Aspect  ratio above provided here solely for convenience in interpreting the display (metres).</p>
+
+<p><b>Central area yield.</b>  The simulated crop yield calculated here as central plant weight divided by its surrounding rectangle with sides of length x plant space and z plant space, see above (Kg/sq.m).</p>
+
+<p><b>Central plant weight.</b>   This is the main simulation result and it represents the mean plant weight of the entire crop, for comparison with other models, see Note 2 above (Kg).</p>
+
+<p><b>x and z neighbour plant weights.</b>  These are provided as a further safety check .  The x direction weight should always equal the central plant weight and the z direction weight should be the same or very similar (Kg).</p>
+<a style="font-size: 90%; font-weight: bold" href="#" onclick="closemainhelp()">Click to exit Help</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<a style="font-size: 90%; font-weight: bold" href="#helptop">Click for top of Help</a></p>
+<br /><br />
+
+<p><a name="overview"><b>Overview of the Y-field theory</b></p>
+
+<p>When plants are grown close together their growth rates are often reduced because they are to some extent sharing area-related resources such as light, water and soil-borne nutrients.<br /><br />
+The purpose of the Y-field theory is to quantitatively model the interaction between such plants and thereby predict plant weight at any particular time, given their starting weights, starting times and the distances separating them from their neighbours.  For a detailed discussion of the theory, its relationship to physics and the mathematical procedure underlying this program, see the documentation at the official Y-field Web site. The Javascript in this program strictly adheres to the mathematical procedure described in the documentation, as may be verified by detailed inspection of the open source code.<br /><br />
+This program was written as a testing facility during the development of the theory itself. It was then extended to make it readily accessible to interested persons whether or not they have detailed knowledge of plant growth or have any  mathematical aptitude. Such users are therefore enabled to apply the theory and comment upon it in the spirit of peer review. Please note that the program is not an example of elegant code nor is it intended for use as a management aid or a crop production tool.   Such a tool might be developed by the author or other persons if the theory survives future public criticism.</p>
+<br /><br />
+
+<p><b>References.</b><p>
+<p>Benjamin, L.R. (1993). <i>Journal of ecology</i>, <b>81</b>, 417-423.<br /><br />
+Overman, A,R. and Scholtz, R.V. III (2011). Model of Yield Response of Corn to Plant Population and Absorption of Solar Energy.  PLOS one. https://doi.org/10.1371/journal.pone.0016117 <br /><br />
+Shinozaki, K. , and Kira, T.J. (1956). Inst. Polytech., Osaka, D, 7, 35.</p>
+<br /><br /><br />
+
+<p><a name="printit"><b>To print this document</b></p>
+
+<p>First highlight all of the text or a selected part, then right-click on the highlight, then copy and paste it into a word processor.</p>
+<br />
+
+<p id="demo"></p>
+<input type="button" onclick="closemainhelp();" value="Click to exit" />
+<br /><br />
+
+
+<p><a href="#hn1">Back to Main Help section</a></p>
+
+<!--------- Download Section --------->
+
+<!-- The imported code needs this but we do not need to see it -->
+<!-- Easier to hide this than alter the code -->
+<textarea id="inputTxt2Save" style="visibility: hidden">
+Type a file name
+then click Step 1.
+</textarea>
+
+
+<p id="download" style="text-align: center; font-size: large">Download section</p>
+
+<p style="text-align: center">
+Download a text file of Y-field data from this Web page off-line
+<br />
+<span style="font-size: 80%">
+NOTE 1. This test feature does NOT require an Internet connection.<br />
+NOTE 2. The file will probably be found in your Download folder.<br />
+</span>
+</p>
+
+<p>
+The file format is as follows:<br />
+There are 200 lines in the file.   Each line ends with a "\n" carriage return character.<br />
+There are 200 floating point numbers in each line and all of the numbers are separated by commas.<br />
+The downloaded data may be rendered as a 2-D contour chart or as a rotatable 3-D surface chart e.g. by Microsoft Excel or MATLAB.<br />
+You may edit the file name offered in the box below.<br />
+
+<br />
+Name of download file: <input id="inputFName" style="width: 100px" type="text" value="Y-Field.txt">
+<span style="margin-left: 2em"></span>
+Click to <input type="button" value="Download now" onclick="dlstart()">
+<br /><br />
+
+<!--------- End of Download Section --------->
+
+
+
+<p id="demo"></p>
+<input type="button" onclick="closemainhelp();" value="Click to exit" />
+<br /><br /><br /><br />
+</div>
+
+<!--------- END OF MAIN HELP PAGE --------->
+
+<div id="help02">
+
+<p><b>The static simulation of one point in time is now complete.</b></p>
+
+<table style="border: 0px">
+<tr>
+<td style="background: beige">To close this box and view the current result:</td>
+<td style="background: beige"><input type="button" value="Click here" onclick="closebox01()"></td>
+</tr>
+<tr>
+<td style="background: beige">To start a dynamic simulation with the<br />current result as an end-point</td>
+<td style="background: beige"><input type="button" value="Click here" onclick="loopOption()"></td>
+</tr>
+<tr>
+<td style="background: beige; font-size: 75%">For an explanation of these options</td>
+<td style="background: beige; font-size: 75%"><a href="#" onclick="subhelp(1)">Click here</a></td>
+</tr>
+<tr>
+<td style="background: beige; font-size: 75%">Are your results within <span style="color: red; font-weight: bold">
+SAFE</span> computing limits?</td>
+<td style="background: beige; font-size: 75%"><a href="#" onclick="subhelp(2)">Click here</a></td>
+</tr>
+</table>
+
+</div>
+
+<div id="warning01">
+
+<p id="w1">Your settings and any unsaved y-field data<br />would be lost.</p>
+<p>
+Click <input type="button" value="Continue with a new simulation" onclick="startNewSim()">
+<br /><br />
+Click <input type="button" value="Close this box and keep current simulation" onclick="closebox02()">
+<br />
+</p>
+
+</div>
+
+<div id="plantDenNote">
+
+<p id="density">The plant density setting can only be changed by<br />
+restarting the program and resetting the <u>Plant interaction plane size</u> as follows.</p>
+
+<p id="dencont">
+<table id="denstab">
+<tr><td id="dc">Plane size (m)</td><td id="dc">Plant density<br /> (plants/sq m)</td></tr>
+<tr><td id="dc">0.25 x 0.25</td><td id="dc">6400</td></tr>
+<tr><td id="dc">0.5 x 0.5</td><td id="dc">1600</td></tr>
+<tr><td id="dc">1 x 1</td><td id="dc">400</td></tr>
+<tr><td id="dc">2 x 2</td><td id="dc">100</td></tr>
+<tr><td id="dc">4 x 4</td><td id="dc">25</td></tr>
+<tr><td id="dc">8 x 8</td><td id="dc">6.25</td></tr>
+<tr><td id="dc">16 x 16</td><td id="dc">1.56</td></tr>
+<tr><td id="dc">32 x 32</td><td id="dc">0.39</td></tr>
+</table>
+</p>
+
+<p>
+Click <input type="button" value="Close this box and continue" onclick="closebox03()">
+<br />
+</p>
+
+</div>
+
+
+<div id="subfoot">
+<p style="background-color: #C1B7A4; text-align: center">&nbsp;</p>
+</div>
+
+
+<!-- ---------------------------- SCRIPT ------------------------ -->
+
+<script>
+
+"use strict";
+
+
+/*--- GLOBAL VARIABLES AND DATA ---*/
+
+var minstartwt = 0.0002;
+var initcount = 0;
+var mouseOP = "Out";
+var offPiste = 0;
+var outMem = 0;
+var scale = 1.0;
+var clr = [];
+var pickedFlag = 0;
+var nplants = 0;
+var tbl;
+var setCentre = 1;  // Initial position of plant symbols (0 == top left)
+var runstate = 0;
+var timeLim = 20;
+var timeUnit = 0;
+var step;
+var timerOn = 0;
+var halted = 0;
+var arraymode = 0;
+var allowReverse = false;  // Setting for reverse growth
+var yXz = 0.0; // kg/sq.m Initial value of entire Y-field (was 0.0001 for debugging?)
+var dyXz = 0; // local growth increment
+var rt2 = Math.sqrt(2); // Gaussian model math constant
+var yfc = 1; // y-field equation constant matching y-field model to Gaussian plant model
+if (YFmodel == 1) yfc = 1.7230;  // Original field operator, p = 1
+if (YFmodel == 2) yfc = 1.3475;  // Overman et al field operator, p = 1
+document.getElementById('iplaneCanvas').style.display = 'block'; 
+var canvas = document.getElementById("iplaneCanvas");
+var plane = canvas.getContext("2d");
+var canvasWidth = canvas.width;
+var canvasHeight = canvas.height;
+var textAreasWidth = (canvasWidth - 5).toString() + "px";
+var deltXzArea;
+var plotSideLength = 0;
+var xx = 0;
+var yy = 0;
+var xdim = 0;
+var zdim = 0;
+var tstartmem = [];
+var deltPlantWt;
+var currentRow;
+var currentColour;
+var currentPlant;
+var oldx = 0;
+var oldy = 0;
+var oldwmax = wmaxdef;
+var asigma = 0;
+var doDevset = 1;
+var ringFlag = 0;
+var rtrnum = 0;
+var innerdia = 0;
+// Initial preset value of screen pixels between plant symbols.
+// Changing this will render the id="denstab" table inaccurate.
+var xinitIncrement = 20;  //Strongly recommend not to change. 
+
+// Include ring layout data from Benjamin, L.R. (1993).
+// Data have been converted from polar to Cartesian coordinates in such ...
+// a way that each treatment pattern will appear centred in the interaction ...
+// plane and scaled to match the 1 x 1 metre plane size.
+// NOTE. These are NOT Benjamin's results, they are only his experimental layouts.
+
+var xbring = []; // the x coordinates
+var zbring = []; // the z coordinates
+
+// treatment number 1.
+xbring[1] = [0,200,210,200,190,200];
+zbring[1] = [0,200,200,210,200,190];
+
+// treatment number 2.
+xbring[2] = [0,200,230,200,170,200];
+zbring[2] = [0,200,200,230,200,170];
+
+// treatment number 3.
+xbring[3] = [0,200,250,200,150,200];
+zbring[3] = [0,200,200,250,200,150];
+
+// treatment number 4.
+xbring[4] = [0,200,210,200,190,200,260,200,140,200];
+zbring[4] = [0,200,200,210,200,190,200,260,200,140];
+
+// treatment number 5.
+xbring[5] = [0,200,210,200,190,200,280,200,120,200];
+zbring[5] = [0,200,200,210,200,190,200,280,200,120];
+
+// treatment number 6.
+xbring[6] = [0,200,210,200,190,200,300,200,100,200];
+zbring[6] = [0,200,200,210,200,190,200,300,200,100];
+
+// treatment number 7.
+xbring[7] = [0,200,230,200,170,200,260,200,140,200];
+zbring[7] = [0,200,200,230,200,170,200,260,200,140];
+
+// treatment number 8.
+xbring[8] = [0,200,230,200,170,200,280,200,120,200];
+zbring[8] = [0,200,200,230,200,170,200,280,200,120];
+
+// treatment number 9.
+xbring[9] = [0,200,230,200,170,200,300,200,100,200];
+zbring[9] = [0,200,200,230,200,170,200,300,200,100];
+
+// treatment number 10.
+xbring[10] = [0,200,250,200,150,200,260,200,140,200];
+zbring[10] = [0,200,200,250,200,150,200,260,200,140];
+
+// treatment number 11.
+xbring[11] = [0,200,250,200,150,200,280,200,120,200];
+zbring[11] = [0,200,200,250,200,150,200,280,200,120];
+
+// treatment number 12.
+xbring[12] = [0,200,250,200,150,200,300,200,100,200];
+zbring[12] = [0,200,200,250,200,150,200,300,200,100];
+
+// treatment number 13.
+xbring[13] = [0,200,210,200,190,200,280,200,120,200,304,260,140,96,96,140,260,304];
+zbring[13] = [0,200,200,210,200,190,200,280,200,120,260,304,304,260,140,96,96,140];
+
+// treatment number 14.
+xbring[14] = [0,200,230,200,170,200,280,200,120,200,304,260,140,96,96,140,260,304];
+zbring[14] = [0,200,200,230,200,170,200,280,200,120,260,304,304,260,140,96,96,140];
+
+// treatment number 15.
+xbring[15] = [0,200,250,200,150,200,280,200,120,200,304,260,140,96,96,140,260,304];
+zbring[15] = [0,200,200,250,200,150,200,280,200,120,260,304,304,260,140,96,96,140];
+
+// End of Benjamin's ring data
+
+
+/*--- THE USER INTERFACE CODE ---*/
+
+/* Setup functions */
+
+// Set up the canvas and related text areas
+function showstate() {
+	document.getElementById("button3").disabled = true; // Disable the preset button
+	document.getElementById("button3").style.color = "gray";
+	document.getElementById("button4").disabled = true; // Disable the start button
+	document.getElementById("button4").style.color = "gray";
+	document.getElementById("button5").disabled = true; // Disable the halt button
+	document.getElementById("button5").style.color = "gray";
+	// Graphics
+	var but2 = document.getElementById("button2");
+	but2.style.opacity = 0.0;
+	but2.disabled = true;
+	// Background is set in CSS but also needed here for some future references
+	document.getElementById("iplaneCanvas").style.background = "lightgray";
+	plane.font = "20px Arial";
+	plane.fillText("Interaction plane",110,200);
+	drawAxes();
+	document.getElementById("button6").disabled = true; // Disable the new simulation button
+	document.getElementById("button6").style.color = "gray";
+	document.getElementById('scaledata').style.width = textAreasWidth;	
+	document.getElementById('currentXZ').style.width = textAreasWidth;
+	document.getElementById('mouseOnPlane').style.width = textAreasWidth;
+	document.getElementById('runMessage').style.width = textAreasWidth;
+	getscale();
+	showCoords(event);
+	canvas.addEventListener("mouseover", mouseIn);
+	canvas.addEventListener("click", mouseClicked);
+	canvas.addEventListener("mouseout", mouseOut);
+	// The following necessary because reloading page retains previous text
+	document.getElementById("runMessage").value = "Run messages";
+	check1.checked = false; // Set default for reverse growth
+	}
+
+// Draw the initial label and axes sketch on the canvas
+function drawAxes() {
+	var xOffset = 70;	
+	var yOffset = -150;
+	var x1 = 10;  	var y1 = 390;
+	var x2 = 10;  	var y2 = 300;
+	var x3 = 6;	var y3 = 295;
+	var x4 = 10;	var y4 = 390;
+	var x5 = 110;   var y5 = 390;
+	var x6 = 115;   var y6 = 394;
+	var xa = x1 + xOffset;	var ya = y1 + yOffset;
+	var xb = x2 + xOffset;	var yb = y2 + yOffset;
+	var xc = x3 + xOffset;	var yc = y3 + yOffset;
+	var xd = x4 + xOffset;	var yd = y4 + yOffset;
+	var xe = x5 + xOffset;	var ye = y5 + yOffset;
+	var xf = x6 + xOffset;	var yf = y6 + yOffset;
+	plane.beginPath();
+ 	plane.moveTo(xa,ya);
+ 	plane.lineTo(xb,yb);
+ 	plane.stroke();
+ 	plane.font = "17px Arial"
+	plane.fillText("z",xc,yc);
+	plane.beginPath();
+ 	plane.moveTo(xd,yd);
+ 	plane.lineTo(xe,ye);
+ 	plane.stroke();
+ 	plane.font = "17px Arial"
+	plane.fillText("x",xf,yf);
+}
+
+
+// Calculate the scale of the interaction plane (iplane) on the canvas
+function getscale() {
+	var e = document.getElementById("plotscale");
+	var valUser = e.options[e.selectedIndex].value;
+	plotSideLength = Number(valUser); // length plot side in metres
+	scale = canvasWidth / valUser;
+	var landResolution = valUser * 2000 / canvasWidth; //  millimetres
+	deltXzArea = (landResolution / 1000) * (landResolution / 1000);  // required global variable
+	var scaleData = "Land resolution: " + landResolution.toString() + " millimetres.   "
+	scaleData += "Screen scale: " + scale.toString() + " px/metre";
+	document.getElementById("scaledata").innerHTML = scaleData;
+	}
+
+// Accommodate an idiosyncrasy of the Chrome browser
+function orgplants() {
+	// Note: necessary because  2nd onchange() does not work in Chrome
+	var e = document.getElementById("numplants");
+	var strUser = e.options[e.selectedIndex].text;
+        //*+* edit in 2 places *+*
+	if (strUser.indexOf("Ring") > -1) radselect(99);
+
+	}
+
+// Display the coordinates of the mouse pointer
+function showCoords(event) {
+	var rect = canvas.getBoundingClientRect();
+    	var x = event.clientX - rect.left;
+    	var z = event.clientY - rect.top;  // vertical axis is z axis here
+	xx = x;
+	yy = z;
+	z = canvasHeight - z;
+	x = x / scale;
+	z = z / scale;
+	if (initcount < 1) {x = 0; z = 0;}
+    	var coords = "x and z coordinates (metres):   x = " + x.toFixed(3) + ",   z = " + z.toFixed(3);
+    	document.getElementById("currentXZ").innerHTML = coords;
+	initcount++;
+}
+
+// Writes out the table of plant parameter values and outputs (user interface main table)
+function writeTable2() {
+	
+	// Fix input values in the initial small table and remove button
+	// Disable and hide button	
+	var but1 = document.getElementById("button1");
+	but1.style.opacity = 0.0;
+	but1.disabled = true;
+	var but2 = document.getElementById("button2");
+	but2.style.opacity = 1.0;
+	but2.disabled = false;
+	plane.clearRect(0, 0, canvas.width, canvas.height);
+	// Fix table values and set the canvas plane scale	
+	var ps = document.getElementById("plotscale");
+	var strps = ps.options[ps.selectedIndex].text;
+	if (ringFlag == 0) {
+		var np = document.getElementById("numplants");
+		var strnp = np.options[np.selectedIndex].text;
+		nplants = Number(strnp); // for table below
+		}
+	// Replace select boxes in table with fixed values 
+	var mytable1 = document.getElementById("table1");
+	mytable1.rows[0].cells[1].innerHTML = strps;
+	mytable1.rows[1].cells[1].innerHTML = strnp;
+
+	// Define parameters for the main data table
+	// Maximum weight of an isolated (non-competing) plant (constant, kilograms)
+	var W = wmaxdef.toFixed(3);  
+	// Growth relative to current weight at any time during exponential phase (constant, g/g/day = 1/days)
+	var rgr = rgrXz.toFixed(3);
+	// A parameter in the plants 'reach' term w/(W(a*d*d+1)) where d is distance (constant, 1/distance)  
+	var awisol = (0.0).toFixed(0);
+	// A parameter in the competition term of Lotke-Volterra type equation systems (constant, unitless number)
+	var awtpc = (0.0).toFixed(dp);
+	// The x-axis coordinate of the centre of a plant, (variable, metres)
+	var xinit = 0; 
+	// The z-axis coordinate of the centre of a plant (variable, metres)
+	var zinit = 0;
+	// The the starting time of growthsimulation of a plant (variable between plants, days)
+	var tStart = (0).toFixed(0);
+	// The initial weight of the seed or transplant (variable between plants, kilograms)
+	var wStart = startWt.toFixed(3); // Note wStart not same variable as wstart
+	// The weight of the plant at any time during simulated growth (variable, kilograms)
+	var wt = (0.0000).toFixed(4);
+	// If the selection is for a ring arrangement go to the ring set up function
+	/*
+	if (strnp.indexOf("ring") > -1) {
+		var numrings = 99;
+		ringFlag = 1; 
+		if (strnp.indexOf("1") > -1) numrings = 1;
+		if (strnp.indexOf("2") > -1) numrings = 2;
+		if (strnp.indexOf("3") > -1) numrings = 3;
+		if (numrings == 99) alert("There was a ring number selection error.");
+		ringSetup(numrings);
+		}
+	*/
+	// If the selection is for an array go to the array set up function
+	if(strnp == "11x11 array") {  // *-* edit in 2 places *-*
+		arraymode = 1;
+		arraySetup();
+		return;
+		}
+
+	// Make visible the ymax input arrangements
+	document.getElementById("text2").style.color = "black";
+	document.getElementById("text1").style.visibility = "visible";
+	
+	// First create the table within a string because 
+	// innerHTML can only write a complete table - not bit-by-bit 
+	var t = "";
+	t += "<div id='tabwin'>"
+	t += "<table id='table2'>";
+		t += "<tr>";
+		t += "<td id='c2'> Plant </td>";
+		t += "<td id='c2'> W </td>";
+		t += "<td id='c2'> rgr </td>";
+		t += "<td id='c2'> w-isol </td>";
+		t += "<td id='c2'> wt% </td>";
+		t += "<td id='c2'> x-posn </td>";
+		t += "<td id='c2'> z-posn </td>";
+		t += "<td id='c2'> t-start </td>";
+		t += "<td id='c2'> w-start </td>";
+		t += "<td id='c2'> w t </td>";
+		t += "</tr>";
+	for (var i = 0; i < nplants; i++) {
+		var plid = (i + 1).toString();
+		xinitIncrement = 20;  // pixels (global)
+		var xinitOffset = 20;  // pixels
+		var zInitOffset = 20; // pixels
+		var xinit = ((xinitOffset/scale) + (xinitIncrement / scale) * i).toFixed(3); // metres 
+		var zinit = ((canvasHeight - zInitOffset) / scale).toFixed(3);  // metres 
+		t += "<tr onclick='rowclick(this)'>";
+		t += "<td id='c2'>" + plid + "</td>";
+		t += "<td id='c2' onchange='wmaxchange(this)'>";
+		t += "<input type='text' placeholder=':input' value=" + W + "></td>";  // part of above
+		t += "<td id='c2'><input type='text' placeholder=':input' value=" + rgr + "></td>";
+		t += "<td id='c2'><input type='text' id='c3' placeholder=':input' value=" + awisol + "></td>";
+		t += "<td id='c2'><input type='text' id='c3' placeholder=':input' value=" + awtpc + "></td>";
+		t += "<td id='c2' onchange='cellchange(this)'>";
+                t += "<input type='text' placeholder=':input' value=" + xinit + "></td>";  // part of above
+		t += "<td id='c2' onchange='cellchange(this)'>";
+                t += "<input type='text' placeholder=':input' value=" + zinit + "></td>";  // part of above
+		t += "<td id='c2'><input type='text' placeholder=':input' value=" + tStart + "></td>";		
+		t += "<td id='c2' onchange='stwtchange(this)'>";		
+		t += "<input type='text' placeholder=':input' value=" + wStart + "></td>";  // part of above 
+		t += "<td id='c2'><input type='text' id='c3' placeholder=':input' value=" + wt + "></td>";
+		t += "</tr>";
+	}
+	t += "</table>";
+	t += "</div>";	
+
+	// Write the table
+	var x = document.getElementsByClassName("column-center");
+	x[0].innerHTML += t;
+
+	document.getElementById("text1").value = ymaxXz.toFixed(3);  // Setting further up does not work !
+
+	// Define colors for individual plant identification.
+	// Note:  rgb is easier to read but hex notation is easier to test when matching.
+	clr[0] =  "#000000";   //"rgb(0,0,0)";
+	clr[1] =  "#ff0000";   //"rgb(255,0,0)";
+	clr[2] =  "#00ff00";   //"rgb(0,255,0)";
+	clr[3] =  "#ffff00";   //"rgb(255,255,0)";
+	clr[4] = "#5050ff";   //"rgb(80,80,255)";
+	clr[5] =  "#ff00ff";   //"rgb(255,0,255)";
+	clr[6] =  "#00ffff";   //"rgb(0,255,255)";
+	clr[7] =  "#cc9999";   //"rgb(204,153,153)";	
+	clr[8] =  "#008000";   //"rgb(0,128,0)";
+	clr[9] =  "#a000a0";   //"rgb(160,0,160)";
+	clr[10] =  "#00c4c4";   //"rgb(0,196,196)";	
+	clr[11] =  "#ffaec9";   //"rgb(255,174,201)";
+	clr[12] = "#e0e0e0";   //"rgb(224,224,224)";
+	clr[13] = "#c3c3c3";   //"rgb(195,195,195)";
+	clr[14] = "#a5a5a5";   //"rgb(165,165,165)";
+	clr[15] = "#878787";   //"rgb(135,135,135)";
+	clr[16] = "#696969";   //"rgb(105,105,105)";  // Not used in this version
+	clr[17] = "#4b4b4b";   //"rgb(75,75,75)"; // Not used inthis version
+	
+	// Colour the first column of the table
+	tbl = document.getElementById("table2");
+	for (var i = 0; i < nplants; i++) {
+		tbl.rows[i + 1].cells[0].style.background = clr[i + 1];
+		}
+
+
+	// Draw and colour a row of circular plant position symbols on the canvas
+	for (var i = 0; i < nplants; i++) {
+		var j = i + 1;
+		var xa = tbl.rows[j].cells[5].children[0].value * scale;
+		var za = tbl.rows[j].cells[6].children[0].value * scale;
+		xa = xa + 0;  // left side offset
+		za = canvasHeight - za;  // invert vertical axis
+		plane.beginPath();
+		plane.arc(xa, za, 5, 0, 2 * Math.PI);
+		plane.stroke();
+		plane.fillStyle = clr[j];
+		plane.fill();
+		}
+
+	if (setCentre == 1 && doDevset == 1) devset();  // Put preset plant symbols at centre
+	
+	document.getElementById("button3").disabled = false; // Enable the preset button
+	document.getElementById("button3").style.color = "gray"; // Needs to be opposite sense to above
+	document.getElementById("button4").disabled = false; // Enable the start button
+	document.getElementById("button4").style.color = "black";
+	document.getElementById("button6").disabled = false; // Enable the new simulation button
+	document.getElementById("button6").style.color = "black";
+}
+
+// 61 .tcO ,harruC EI thgirypoc
+
+// Could be in main routine but left here for future expansion
+function ringSetup(nrings) {
+
+if (nrings == 1) nplants = 1 + 4;
+if (nrings == 2) nplants = 1 + 8;
+if (nrings == 3) nplants = 1 + 16;
+
+//radselect(nrings);
+
+}
+
+//Set up arrangements for array mode
+function arraySetup() {
+	
+	// Calculate plant density from plot scale
+	// First calculate distance between plants when recangularity = 1
+	// This is 20 pixels divided by scale
+	var pspace = xinitIncrement / scale;
+	var areaPerPlant = pspace * pspace;
+	var density = 1.0 / areaPerPlant;
+	var denstring = density.toFixed(3);
+
+	// Construct a string of an HTML input table
+	var t = "";
+	t += "<table id='table3'>";
+	t += "<tr>";
+	t += "<td id='c4'> Y-max (kg / sq m)</td>";
+	t += "<td id='c2'><input type='text' placeholder=':input' value=" + ymaxXz.toFixed(3) + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'> W (kg)</td>";
+	t += "<td id='c2'><input type='text' placeholder=':input' value=" + wmaxdef.toFixed(3) + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'> Plant density (number / sq m)&nbsp;</td>";
+	t += "<td id='c5' onclick='densityNotice()'><input type='text' placeholder=':input' value=" + denstring + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'> Aspect ratio (rectangularity)</td>";
+	t += "<td style='border: 0; background: lightgray'>";
+	t += "<select id='rectangularity' style='border: 0' onchange='fixrect()'>";
+  	t += "<option value='1' selected>1</option>";
+  	t += "<option value='2'>2</option>";
+  	t += "<option value='4' selected>4</option>";
+  	t += "<option value='8'>8</option>";
+  	t += "<option value='16'>16</option>";
+	t += "</select>"; 
+	t += "</td>";
+	t += "<tr>";
+	t += "<td id='c4'> Plant space <b>x</b> direction (m)</td>";
+	t += "<td id='c2'><input type='text' placeholder=':input' value=" + 0 + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'> Plant space <b>z</b> direction (m)</td>";
+	t += "<td id='c2'><input type='text' placeholder=':input' value=" + 0 + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'><b>C</b>entral area yield (kg/sq m)</td>";
+	t += "<td id='c2'><input type='text' style='font-weight: bold' placeholder=':input' value=" + 0.000 + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'><b>C</b>entral plant weight (kg)</td>";
+	t += "<td id='c2'><input type='text' style='font-weight: bold; color: red' placeholder=':input' value=" + 0.000 + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'><b>x</b> neighbour plant weight (kg)</td>";
+	t += "<td id='c2'><input type='text' style='font-weight: bold' placeholder=':input' value=" + 0.000 + "></td>";
+	t += "</tr>";
+	t += "<tr>";
+	t += "<td id='c4'><b>z</b> neighbour plant weight (kg)</td>";
+	t += "<td id='c2'><input type='text' style='font-weight: bold' placeholder=':input' value=" + 0.000 + "></td>";
+	t += "</tr>";
+	t += "</table>";
+	// Add a note about delay
+	t += "<p id='delaynote'>NOTE.  There may be some delay after starting the simulation.</p>";
+	t += "<p id='inclusion'><b>WARNING</b>.  To avoid serious inaccuracies caused by edge effects ...<br />";
+	t += "1.  A light grey circle must be clearly visible (but see HELP).<br />"
+	t += "2.  At least one plant must be on or outside the circle's top-centre border.</p>";	
+
+	// Write the table
+	var x = document.getElementsByClassName("column-center");
+	x[0].innerHTML += t;
+
+	fixrect();  // Enter the initial x and z spacing values into the table.  NB DEPENDS ON DENSITY
+	
+	document.getElementById("button4").disabled = false; // Enable the start button
+	document.getElementById("button4").style.color = "black";
+	document.getElementById("button6").disabled = false; // Enable the new simulation button
+	document.getElementById("button6").style.color = "black";
+}
+
+
+/* Event functions */
+
+// Responds to the "mouse within canvas" event
+function mouseIn() {
+	mouseOP = "In";
+	document.getElementById("mouseOnPlane").innerHTML = mouseOP;
+}
+
+// Responds to "mouse clicked within canvas" event
+function mouseClicked() {
+
+	if(runstate > 0) return;  //  Must not change plant positions and images
+    	document.getElementById("mouseOnPlane").innerHTML = "In and clicked"
+	var imgData = plane.getImageData(xx, yy, 1, 1);
+	if(pickedFlag == 1) {
+		pickedFlag = 0;	
+		
+		// remove previous position of current plant 
+		var xold = tbl.rows[currentPlant].cells[5].children[0].value * scale
+		var yold = canvasHeight - tbl.rows[currentPlant].cells[6].children[0].value * scale;
+		var blanker = document.getElementById("iplaneCanvas").style.background;
+		plane.beginPath();
+		plane.arc(xold, yold, 6, 0, 2 * Math.PI); // increase radius by 1
+		plane.strokeStyle = blanker;
+		plane.stroke();
+		plane.fillStyle = blanker;
+		plane.fill();
+		
+		if(offPiste == 0) {
+		// draw a new position for current plant
+		document.getElementById("button3").style.color = " black";
+		plane.beginPath();
+		plane.arc(xx, yy, 5, 0, 2 * Math.PI);
+		plane.strokeStyle = "#000000";
+		plane.stroke();
+		plane.fillStyle = currentColour;
+		plane.fill();		
+		// Enter the new plant position coordinates into the table		
+		tbl.rows[currentPlant].cells[5].children[0].value = (xx / scale).toFixed(3);
+		tbl.rows[currentPlant].cells[6].children[0].value = ((canvasHeight - yy) / scale).toFixed(3);
+			}
+		else {offPiste = 0;}
+
+		if(offPiste == 1) {
+			return;
+			}
+
+		}
+
+	//  This segment finds clicked colour and if plant symbol sets pickedFlag
+	var red = imgData.data[0];
+	var green = imgData.data[1];
+	var blue = imgData.data[2];
+	var alpha = imgData.data[3];
+	var hexcolour = rgbToHex(red, green, blue);
+	currentColour = "";
+	for(var i = 0; i < nplants; i++) {
+		var j = i + 1;
+		if (clr[j] == hexcolour.toString()) {
+			currentColour = clr[j];
+			currentPlant = j;
+			pickedFlag = 1;
+			break;
+			}
+		}
+
+
+} // also returned above in 2 places
+
+// Responds to mouse clicked anywhere on the screen
+function mouseClickedAnywhere() {
+
+if (mouseOP == "Out" && pickedFlag == 1) {
+	offPiste = 1;
+	outMem = 1;
+
+	// remove previous position of current plant 
+		var xold = tbl.rows[currentPlant].cells[5].children[0].value * scale
+		var yold = canvasHeight - tbl.rows[currentPlant].cells[6].children[0].value * scale;
+		var blanker = document.getElementById("iplaneCanvas").style.background;
+		plane.beginPath();
+		plane.arc(xold, yold, 6, 0, 2 * Math.PI); // increase radius by 1
+		plane.strokeStyle = blanker;
+		plane.stroke();
+		plane.fillStyle = blanker;
+		plane.fill();
+	
+	// Set the value of corresponding non-sharing plant parameter W[i] to zero ...
+	// thereby preventing the development of plant weight.
+	tbl.rows[currentPlant].cells[1].children[0].value = 0;
+	document.getElementById("button3").style.color = "grey";
+	
+	}
+}
+
+// Responds to the "mouse outside canvas" event
+function mouseOut() {
+	mouseOP = "Out";
+	document.getElementById("mouseOnPlane").innerHTML = mouseOP;
+	// Below is necessary because showCoords() not getting updated mouseOP !!
+	var x = 0;
+	var z = 0;
+	var coords = "x and z coordinates (metres):   x = ";
+	coords +=  x.toFixed(3) + ",   z = " + z.toFixed(3);
+    	document.getElementById("currentXZ").innerHTML = coords;
+}
+
+// Responds to the "mouse clicked on table" event
+function tableClicked () {
+    	//document.getElementById("mouseOnPlane").innerHTML = "In and clicked"
+	//var imgData = plane.getImageData(xx, yy, 1, 1);
+	var wmaxtest = Number(tbl.rows[currentRow].cells[1].children[0].value);
+	if(pickedFlag == 1) {
+		pickedFlag = 0;
+		if (wmaxtest > 0) {
+			// draw a new position for current plant if not removed (wmaxtest)
+			plane.beginPath();
+			plane.arc(xx, yy, 5, 0, 2 * Math.PI);
+			plane.strokeStyle = "#000000";
+			plane.stroke();
+			plane.fillStyle = currentColour;
+			plane.fill();
+			}
+		// remove previous position of current plant
+		var blanker = document.getElementById("iplaneCanvas").style.background;
+		plane.beginPath();
+		plane.arc(oldx, oldy, 6, 0, 2 * Math.PI); // increase radius by 1
+		plane.strokeStyle = blanker;
+		plane.stroke();
+		plane.fillStyle = blanker;
+		plane.fill();
+		}
+	}
+
+// Responds to the "mouse clicked on a table row" event
+function rowclick(event) {
+	currentRow = event.rowIndex;
+	var wmaxtest = Number(tbl.rows[currentRow].cells[1].children[0].value);
+	if (wmaxtest <= 0) {
+		alert("Plant number " + currentRow + " was removed.");
+
+		}
+	currentColour = clr[currentRow];
+	oldx = tbl.rows[currentRow].cells[5].children[0].value * scale;
+	oldy = canvasHeight - tbl.rows[currentRow].cells[6].children[0].value * scale;
+	oldwmax = Number(tbl.rows[currentRow].cells[1].children[0].value);
+	}
+
+// Responds to the "contents of a table cell changed" event 
+function cellchange(event) {
+	xx = tbl.rows[currentRow].cells[5].children[0].value * scale;
+	yy = canvasHeight - tbl.rows[currentRow].cells[6].children[0].value * scale;
+	pickedFlag = 1;
+	tableClicked();
+	}
+
+// Responds to the "contents of a table cell changed" w max event 
+function wmaxchange(event) {
+	if (oldwmax <= 0) {
+		tbl.rows[currentRow].cells[1].children[0].value = "0"; //Format for tidy output !
+		return;
+		}
+	var wmaxfound = Number(tbl.rows[currentRow].cells[1].children[0].value);
+	if (wmaxfound <= 0) {
+		// remove previous position of current plant
+		var blanker = document.getElementById("iplaneCanvas").style.background;
+		plane.beginPath();
+		plane.arc(oldx, oldy, 6, 0, 2 * Math.PI); // increase radius by 1
+		plane.strokeStyle = blanker;
+		plane.stroke();
+		plane.fillStyle = blanker;
+		plane.fill();
+		oldwmax = 0;
+		outMem = 1;
+		tbl.rows[currentRow].cells[1].children[0].value = "0";
+		}
+	}
+
+// Responds to the "contents of a table cell changed" start weight event 
+function stwtchange(x) {
+	
+	var myrow = x.parentNode.rowIndex;
+	var tb2 = document.getElementById("table2");
+	var wt = tb2.rows[myrow].cells[8].children[0].value;
+	if(wt < minstartwt > 0) {
+		badwstart(wt);
+		return;
+		tb2.rows[myrow].cells[8].children[0].value = 0.001;
+		}
+	}
+
+// Responds to selection of ring number
+function radselect(nr) {
+	var rads = document.getElementById("ringdata");
+	rads.style.zIndex = 1;
+	document.getElementById("button1").disabled = true; // Disable the confirmation button
+	document.getElementById("button1").style.color = "gray";
+	}
+
+// Responds to the selection of a ring radius set
+function ringrad(tr, r1, r2, r3) {
+	ringFlag = 1;
+	rtrnum = tr;
+
+	// Find the number of plants in the pattern
+	nplants = 5;
+	if (r2 > 0) nplants += 4;
+	if (r3 > 0) nplants += 8;
+	
+	// Hide the table window and enable the Confirmation button
+	var cont = document.getElementById("ringdata");
+	cont.style.zIndex = -1;
+	document.getElementById("button1").disabled = false; // Disable the confirmation button
+	document.getElementById("button1").style.color = "black";
+	}
+
+
+// Responds to the "help button clicked" event
+function mainhelp() {
+	var hlp = document.getElementById("help01"); 
+	hlp.style.zIndex = 1;
+	var but2 = document.getElementById("button2");
+	but2.style.opacity = 0.0;
+	but2.disabled = true;
+	if (arraymode == 1) document.getElementById("arraylink").click();
+	}
+
+function subhelp(n) {
+	var hlp = document.getElementById("help01"); 
+	hlp.style.zIndex = 2;
+	if (n == 1) document.getElementById("startsimlink").click();
+	if (n == 2) document.getElementById("safecomp").click();
+	if (n == 3) document.getElementById("ringlink").click();
+	}
+
+// Enables user choice of stop or continue to dynamic simulation
+function stopOrDyn() {
+	var hlp = document.getElementById("help02");
+	hlp.style.zIndex = 1;
+		document.getElementById("button4").disabled = true; // Disable the start button
+		document.getElementById("button4").style.color = "gray";
+		document.getElementById("button5").disabled = true; // Enable the halt button
+		document.getElementById("button5").style.color = "gray";
+	}
+
+// Enables user choice of starting a new simulation or not
+function warning01() {
+	var hlp = document.getElementById("warning01");
+	hlp.style.zIndex = 1;
+	}
+
+// Responds to click on plant density value in 2-D p[lant array param table
+function densityNotice() {
+	var hlp = document.getElementById("plantDenNote");
+	hlp.style.zIndex = 1;
+
+	}
+
+// Responds to the "exit help window button clicked"
+function closemainhelp() {
+	var hlp = document.getElementById("help01");
+	hlp.style.zIndex = -1;
+	var but2 = document.getElementById("button2");
+	but2.style.opacity = 1.0;
+	but2.disabled = false;	
+	}
+
+// Responds to a "close box button clicked"
+function closebox01() {
+	var hlp = document.getElementById("help02");
+	hlp.style.zIndex = -1;
+	if (timeUnit > 0) return;
+	document.getElementById("button5").disabled = true; // Disable the halt button
+	document.getElementById("button5").style.color = "grey";	
+	}
+
+// Responds to a "close warning box button clicked"
+function closebox02() {
+	var hlp = document.getElementById("warning01");
+	hlp.style.zIndex = -1;
+	}
+
+// Responds to a "close density note button clicked"
+function closebox03() {
+	var hlp = document.getElementById("plantDenNote");
+	hlp.style.zIndex = -1;
+	}
+
+// Responds to the "plant preset positions request button clicked"
+function devset() {
+
+	document.getElementById("button3").style.color = "gray";
+
+	if (outMem == 1) {
+
+		var msg  = "This program cannot preset plant symbols if one or more of them has been removed.\n";
+		msg += "Click OK then either continue with the present symbols OR restart the program.";
+		alert(msg);
+
+		return;
+		}
+
+	// Remove all plant symbols from current locations before drawing new ones
+	for (var i = 1; i < nplants +1; i++) {
+		// remove previous position of current plant
+		var currentPlant = i; 
+		var xold = tbl.rows[currentPlant].cells[5].children[0].value * scale
+		var yold = canvasHeight - tbl.rows[currentPlant].cells[6].children[0].value * scale;
+		var blanker = document.getElementById("iplaneCanvas").style.background;
+		plane.beginPath();
+		plane.arc(xold, yold, 6, 0, 2 * Math.PI); // increase radius by 1
+		plane.strokeStyle = blanker;
+		plane.stroke();
+		plane.fillStyle = blanker;
+		plane.fill();
+		// Update table
+		tbl.rows[currentPlant].cells[5].children[0].value = "0.000";
+		tbl.rows[currentPlant].cells[6].children[0].value = "0.000";
+		}
+
+	// Redraw symbols in the testing position
+	var offset = (1 + nplants) * 10; // pixels;
+	var yy = canvasHeight / 2; // pixels
+	var xcw = canvasWidth / 2; // pixels
+
+	for (var i = 1; i < nplants + 1; i++) {
+		currentPlant = i;
+		xx = (xcw - offset) + 20 * i;  // pixels
+
+		if (ringFlag == 1) {
+			// Include Benjamin's ring data
+			xx = ((xbring[rtrnum][i] * 2) / 5) + 120;
+			yy = ((zbring[rtrnum][i] * 2) / 5) + 120; 
+			}
+	
+		pickedFlag = 0;
+		// draw a new position for current plant
+		plane.beginPath();
+		plane.arc(xx, yy, 5, 0, 2 * Math.PI);
+		plane.strokeStyle = "#000000";
+		plane.stroke();
+		plane.fillStyle = clr[currentPlant];
+		plane.fill();
+		// Enter the new plant position coordinates into the table		
+		tbl.rows[currentPlant].cells[5].children[0].value = (xx / scale).toString();
+		//tbl.rows[currentPlant].cells[5].children[0].value = (xx / scale).toFixed(3);
+		tbl.rows[currentPlant].cells[6].children[0].value = ((canvasHeight - yy) / scale).toString();
+		}		
+		var npl = document.getElementById("table1").rows[1].cells;
+		npl[1].innerHTML = nplants.toString();  // Otherwise would be 'undefined' in ring pattern case
+	
+	offPiste = 0;
+
+	// Note one other return above.
+	
+}
+
+
+function startNewSim() {
+
+	location.reload(true);
+
+	}
+
+
+/* End of main event functions (more in simulation section below) */
+	
+
+/* Utility functions */
+
+
+// Dynamically creates any array up to 3-dimensions (see explanation below)
+function genArray(theName, dimA, dimB, dimC) {
+	//
+	// Creates an array of any name (string) with one, two or three dimensions.
+	// dimA, dimB and dimC are array sizes in each dimension. zero = no array.
+	// The array elements are initialized with zero.
+	// Example to create an array:  genArray("myData", 7, 100, 25).
+	// Example to access an element:  stock = myData[5][19][7];
+	// Further usage rules:  see dimension argument tests below.
+	// (More compact code is possible at a cost of extra logic & less readability.)
+	//
+	theName = theName.trim();
+	var dimensions = 0;
+	if (dimA && !dimB && !dimC > 0) dimensions = 1;
+	if (dimA && dimB && !dimC > 0) dimensions = 2;
+	if (dimA && dimB && dimC > 0) dimensions = 3;
+	if (theName.length < 1) dimensions = 0;
+	if (dimensions < 1) {
+		alert("ERROR\nArray generator has incorrect argument set");
+		return;
+		}
+	if (dimensions == 1) {
+		window[theName] = [];  // window[] similar to eval()
+		for(var i = 0; i < dimA; i++) {		
+			window[theName][i] = 0;
+			}		
+		}
+	if (dimensions == 2) {
+		window[theName] = [];  
+		for(var i = 0; i < dimA; i++) {		
+			window[theName][i] = [];
+			for(var j = 0; j < dimB; j++) {
+				window[theName][i][j] = 0;
+				}
+			}
+		}
+	if (dimensions == 3) {
+		window[theName] = [];  
+		for(var i = 0; i < dimA; i++) {		
+			window[theName][i] = [];
+			for(var j = 0; j < dimB; j++) {
+				window[theName][i][j] = [];
+				for(var k = 0; k < dimC; k++) {
+					window[theName][i][j][k] = 0;
+					}
+				}
+			}
+		}
+}
+
+
+// Converts an rgb colour 3-number notation to a single hexadecimal number notation
+function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1,7);
+}
+
+//Plots a 4-pixel dot of any rgb colour  See also hex version.  Not for general application.  
+function plotRGB(vi, vj, r, g, b) {
+	var hexcolor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1,7);
+	var xi = vi * 2;
+	var zj = (400 - vj*2);
+	plane.fillStyle = hexcolor;		
+ 	plane.fillRect(xi, zj, 2, 2); 
+
+} 
+//Plots a 4-pixel dot of any hex colour  See also rgb version.  Not for general application.  
+function plotHEX(vi, vj, hstr) {
+	var xi = vi * 2;
+	var zj = (400 - vj*2);
+	plane.fillStyle = hstr;		
+ 	plane.fillRect(xi, zj, 2, 2); 
+}
+
+// Create a busy loop delay
+function delay(millis) {
+	var target = new Date().valueOf() + millis;
+	do {var current = new Date().valueOf();
+		} while (current < target);
+}
+
+
+/*--- THE SIMULATION CODE --- */
+
+// INTERACTION PLANE DEFINITIONS AND DATA STRUCTURE
+// The simulated area of land on which plants might interact is represented as the interaction plane. 
+// The interaction plane is dimensioned x and z and is divided into small squares delta x-z.
+// The length of one side of a delta x-z square is the SPATIAL RESOLUTION of the simulation.
+// The location of any particular delta x-z square will be called below dxz for subscript brevity. 
+// In computer memory the collection of squares dxz is represented by the array "iplane[dx][dz]".
+// For each array element [dx][dz] there is a third vector [dw] containing the variety of data listed below.
+// 
+// So dw can take the value:  0, 1, 2 ... 10, fdi, yi, ymi; in particular ...
+//
+// [dx][dz][0] = 1 if this dxz is included in the simulation or 0 if it is too remote from plant centres.
+// [dx][dz][1] = The value of the criterion for inclusion in the simulation.
+// [dx][dz][2] = Spare array element reserved for dxz.
+// [dx][dz][3] = The simulated land area X COORDINATE position (in metres) corresponding to iplane index dx.
+// [dx][dz][4] = The simulated land area Z COORDINATE position (in metres) corresponding to iplane index dz. 
+//
+// [dx][dz][5]  = The local sum of f(di) for all plants 1 to i.
+// [dx][dz][6]  = The special case static value of THE Y COORDINATE OF THE X-Z-Y SPACE.
+// [dx][dz][7]  = The global y maximum parameter.
+// [dx][dz][8]  = Currently unused.
+// [dx][dz][9]  = The time loop current value of THE Y COORDINATE OF THE X-Z-Y SPACE.
+// [dx][dz][10] = The time loop current increment of THE Y COORDINATE OF THE X-Z-Y SPACE.
+//
+// Where the number of plants = nplants and i is the index of the ith plant and ...
+// fdi = 10 + i 
+// dci  = 10 + nplants + i
+// ymi = 10 + 2 * nplants + i
+// then ...
+// [dx][dz][fdi] = The value of f(d) from the ith plant to location dxz in the interaction plane.
+// [dx][dz][dci]  = The distance from thex-z cell to the ith plant.
+// [dx][dz][ymi] = The ith plant's share of the x-z cell's latest y-field value 
+//
+// The size of the large array "iplane[dx][dz][dw]" is therefore linearly related to the number of plants.
+//
+//
+// PLANT DEFINITIONS AND DATA STRUCTURES
+// The simulation plant data are stored in 10 arrays each of a length equal to the number of plants involved.
+// The nine of these arrays are a mirror of the nine columns in the user interface table of plant data.
+// Assuming that there are n plants in the simulation, the arrays are as follows:
+// W[n]		The maximum weight that an isolated plant can reach by not in teracting with any other plant.
+// rgr[n]	The constant "relative growth rate" being the rate of growth relative to the current plant weight.
+// wisol[n] 	The weight that an isolated plant reaches at a particular time t.
+// wtpc[n]	The weight of any plant at time t compared with an isolated plant at time t expressed as percentage. 
+// xpos[n]	The plant position x coordinate on the interaction plane.
+// zpos[n]	The plant position y coordinate on the interaction plane.
+// tstart[n]    The time at which the simulated growth begins.  Must be at the start of the main simulation or later.
+// wstart[n]	The weight of the plant (or seedling or cutting) at the start of simulated growth.
+// wtt[n]	The weight of the plant at any time t.   This is the MAIN RESULT of the simulation.
+// (copyright IE Currah, Oct. 16)
+
+// Create and prepare arrays for the simulation 
+function prepare() {
+
+	// The large iplane array
+	xdim = canvasWidth / 2;
+	zdim = xdim;
+	var dw = 10 + 3 * nplants;	
+	genArray("iplane", xdim, zdim, dw);
+
+	// The user interface table mirror
+	genArray("W", nplants + 1);
+	genArray("rgr", nplants + 1);
+	genArray("wisol", nplants + 1);
+	genArray("wtpc", nplants + 1);
+	genArray("xpos", nplants + 1);
+	genArray("zpos", nplants + 1);
+	genArray("tstart", nplants + 1);
+	genArray("wstart", nplants + 1);
+	genArray("wtt", nplants + 1);
+	genArray("gsig", nplants + 1);
+	genArray("sigdyn", nplants + 1);
+	genArray("wni", nplants + 1);
+	genArray("growlog", nplants + 1);
+
+	//Copy the interface table values into the new arrays
+	for (var i = 1; i < nplants + 1; i++) {
+		W[i] =      +tbl.rows[i].cells[1].children[0].value;
+		rgr[i] =    +tbl.rows[i].cells[2].children[0].value;
+		wisol[i] =  +tbl.rows[i].cells[1].children[0].value;  // initially same as W[i]
+		wtpc[i] =   +tbl.rows[i].cells[4].children[0].value;
+		xpos[i] =   +tbl.rows[i].cells[5].children[0].value;
+		zpos[i] =   +tbl.rows[i].cells[6].children[0].value;
+		tstart[i] = +tbl.rows[i].cells[7].children[0].value;
+		wstart[i] = +tbl.rows[i].cells[8].children[0].value;
+		wtt[i] =    +tbl.rows[i].cells[9].children[0].value;
+		
+		// fixed Gaussian sigma param. via bell vol.		
+		if (pflat == 1) gsig[i] =   Math.sqrt(W[i] / (2 * Math.PI * ymaxXz)); // normal Gaussian
+  		else gsig[i] = volBisMeth(ymaxXz, pflat, W[i]);  // get sigma estimate for generalized Gaussian
+
+		// time-dependant Gaussian param.
+		if (pflat == 1) sigdyn[i] = Math.sqrt(wstart[i] / (2 * Math.PI * ymaxXz)); // normal Gaussian 
+ 		else sigdyn[i] = volBisMeth(ymaxXz, pflat, wstart[i]);  // get sigma estimate for generalized Gaussian
+
+		wni[i] =    wstart[i];  // weight of a notional non-interacting plant
+		growlog[i] = true;  // enable logistic growth
+		if (wstart[i] < minstartwt) {
+			badwstart(wstart[i]);
+			return;
+		 	}
+		}
+
+	// tstart patch part 1
+	//tstartmem = [];
+	for (var i = 1; i < nplants + 1; i++) {
+		tstartmem[i] = tstart[i];
+		tstart[i] = 0;
+
+		}
+}
+
+// Use distance function f(d) to define areas of plant influence.
+function defineAreas() {
+
+// Note about distances.
+// A position ix/jz in the iplane array must be multiplied by 2 (= canvasWidth / xdim) ...
+// in order to equate with the pixel position xp/zp on the canvas.  xp/zp must then be ...
+// divided by the "scale" variable to get coordinates x/z in metres.  Pythagoras theorem ...
+// may then be used to find a distances in metres corespondng to iplane array locations.
+
+	// Record the land area coordinates (metres) for each iplane element
+	var ratioCanPlane = canvasWidth / xdim;
+	var pix2metre = ratioCanPlane / scale;
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			iplane[ix][jz][1] = fodExclusCrit;  // take opportunity to insert criterion
+			iplane[ix][jz][3] = ix * pix2metre;	
+			iplane[ix][jz][4] = jz * pix2metre;
+			}
+		}
+	
+	// Calc and store the value of f(d) from each plant to the x-z iplane position (metres).
+	// Then in this static SPECIAL CASE calculate the total yield from all plants to the x-z position
+	// Also in this special case calculate the weight contribution to each plant from the x-z position 
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			var fodmax = 0;
+			for (var pl = 1; pl < nplants + 1; pl++) {
+				var dci  = 10 + nplants + pl;
+				var x1 = xpos[pl];
+				var z1 = zpos[pl];	
+				var x2 = iplane[ix][jz][3];	// x location of this element in metres
+				var z2 = iplane[ix][jz][4]; // z location of this element in metres
+				var sqrx = (x1 - x2) * (x1 - x2);
+				var sqrz = (z1 - z2) * (z1 - z2);
+				var d12 = Math.sqrt(sqrx + sqrz); // the distance to the plant
+				iplane[ix][jz][dci] = d12; // store the distance
+
+				// Gaussian model
+				var distarg = d12 / (rt2 * gsig[pl]);
+				//var exparg = -0.5 * distarg * distarg;
+
+				// *p1
+				//var exparg = distarg * distarg;
+				var exparg = Math.pow(distarg * distarg, pflat);
+
+				//var fod = Math.exp(exparg);
+				var fod = 1.0 / Math.exp(exparg);
+				var fdi = 10 + pl;
+				iplane[ix][jz][fdi] = fod;
+				if (fod > fodmax) {fodmax = fod;}				
+				}
+			if (fodmax > iplane[ix][jz][1]) {iplane[ix][jz][0] = 1}    // flag for later computation
+			if (iplane[ix][jz][0] < 1) {plotHEX(ix, jz, "#808080");}  // mark for computation exclusion
+
+			}
+		}
+	}
+
+// Main time loop (must have this particular JS structure to enable periodic dispaly update)
+function timedCount() {
+	document.getElementById("runMessage").value = timeUnit.toString() + " " + "days";
+	nonIntPl();  // Step the non-interacting plant model
+	spaceRunD();  // iterate through iPlane
+	timeUnit = timeUnit + 1;
+	step = setTimeout(function() {timedCount() }, 500);
+}
+
+// Responds to the "start the simulation button clicked"
+function simstart() {
+
+// Arrange for the array option
+if (arraymode == 1) {
+	arrayMode();
+	return;
+	}
+
+// Read the ymax input
+ymaxXz = document.getElementById("text1").value;
+
+// Check wether reverse growth is to be allowed
+if (check1.checked == true) allowReverse = true;
+else allowReverse = false;
+
+	if (!timerOn) {
+		timerOn = 1;
+		if (runstate == 0) {
+			runstate = 1;
+			if(!halted){
+				setUpSim();
+				}
+			}
+		document.getElementById("check1").disabled = true;  // Disable the reverse check box
+		document.getElementById("button4").disabled = true; // Disable the start button
+		document.getElementById("button4").style.color = "gray";
+		document.getElementById("button5").disabled = false; // Enable the halt button
+		document.getElementById("button5").style.color = "red";
+	}
+	if(!halted)stopOrDyn(); // User chooses to stop or continue with dynamic simulation
+	else timedCount();
+}
+
+//Sets up and starts the simulation loop
+function loopOption() {	
+		document.getElementById("button4").disabled = true; // Disable the start button
+		document.getElementById("button4").style.color = "gray";
+		document.getElementById("button5").disabled = false; // Enable the halt button
+		document.getElementById("button5").style.color = "red";
+	setUpLoop();
+	timedCount(); // Start/restart the loop
+	closebox01();
+}
+
+//Sets up and starts the simulation loop
+function arrayOption() {	
+		document.getElementById("button4").disabled = true; // Disable the start button
+		document.getElementById("button4").style.color = "gray";
+		document.getElementById("button5").disabled = false; // Enable the halt button
+		document.getElementById("button5").style.color = "red";
+	closebox04();
+}
+
+// Responds to "halt simulation button clicked"
+function simstop() {
+	halted++;
+	clearTimeout(step);
+	timerOn = 0;
+	document.getElementById("button4").disabled = false; // Disable the start button
+	document.getElementById("button4").style.color = "black";
+	document.getElementById("button5").disabled = true; // Disable the halt button
+	document.getElementById("button5").style.color = "grey";
+	}
+
+function setUpSim() {
+	document.getElementById("button3").disabled = true; // Disable the preset button
+	document.getElementById("button3").style.color = "gray";
+	document.getElementById("button5").disabled = true; // Disable the start button
+	document.getElementById("button5").style.color = "gray";
+	prepare();  // Create and prepare arrays for the simulation
+	defineAreas(); // Use distance function f(d) to define areas of plant influence.
+	calcFieldD();  // Calculate y-field and plant weights
+	//spaceRunD();
+}
+
+function arrayMode() {
+	
+	prepArray();
+	calcFieldA();
+}
+
+function prepArray() {
+
+	//Generate tables for 11 x 11 plants
+	var nplants = 121;
+
+	// The large iplane table
+	xdim = canvasWidth / 2;
+	zdim = xdim;
+	var dw = 10 + 3 * nplants;	
+	genArray("iplane", xdim, zdim, dw);
+
+	// Positions and weights table
+	genArray("xpos", nplants + 1);
+	genArray("zpos", nplants + 1);;
+	genArray("wtt", nplants + 1);
+
+	//  Read the user's array settings table
+	var tb3   = document.getElementById("table3");
+	ymaxXz    = tb3.rows[0].cells[1].children[0].value;
+	wmaxdef   = tb3.rows[1].cells[1].children[0].value;
+	var adens = tb3.rows[2].cells[1].children[0].value;
+	var arect = tb3.rows[3].cells[1].children[0].value; 
+	
+	// Calculate plant positions
+	var centreX = canvasWidth / 2 / scale;   // metres
+	var centreZ = canvasHeight / 2 / scale;  // metres
+        var stepX = (xinitIncrement * Math.sqrt(arect)) / scale;  // metres 
+	var stepZ = (xinitIncrement / Math.sqrt(arect)) / scale;  // metres 
+	var plantArea = stepX * stepZ;  // Checks with 1/density OK
+
+	// Generate plant positions
+	var offsetX = centreX - (5 * stepX);
+	var offsetZ = centreZ - (5 * stepZ);
+	var plantNum = 1;
+	for (var ax = 0; ax < 11; ax++) {
+		var xplot = offsetX + ax * stepX;
+		for (var az = 0; az < 11; az++) {
+			var zplot = offsetZ + az * stepZ;
+			xpos[plantNum] = xplot;
+			zpos[plantNum] = zplot;
+			plantNum++;
+			}
+		}
+
+	// Calculate inclusion for computation (must be done before drawing plants)
+	include2calc();
+
+	// Draw the plant symbols in the positions calculated above
+	for (plantNum = 1; plantNum < 122; plantNum++) {
+		myplotHEX(xpos[plantNum], zpos[plantNum], "#006000");
+		}
+
+// Mark centre plant in different colour
+myplotHEX(xpos[61], zpos[61], "#FF0000");
+
+}
+
+// Rectangularity function
+function fixrect() {
+	
+	var tb3   = document.getElementById("table3");
+	var arect = tb3.rows[3].cells[1].children[0].value;
+        var stepX = (xinitIncrement * Math.sqrt(arect)) / scale;  // metres 
+	var stepZ = (xinitIncrement / Math.sqrt(arect)) / scale;  // metres 
+	tb3.rows[4].cells[1].children[0].value = stepX.toFixed(3);
+	tb3.rows[5].cells[1].children[0].value = stepZ.toFixed(3);
+
+	}
+
+function include2calc() {
+
+   	// Record the land area coordinates (metres) for each iplane element
+	var ratioCanPlane = canvasWidth / xdim;
+	var pix2metre = ratioCanPlane / scale;
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			iplane[ix][jz][1] = fodExclusCrit;  // take opportunity to insert criterion
+			iplane[ix][jz][3] = ix * pix2metre;	
+			iplane[ix][jz][4] = jz * pix2metre;
+			}
+		}	
+
+	// Gaussian sigma param. via bell vol. (removed from inside nested loop structure below)
+	if (pflat == 1) asigma =    Math.sqrt(wmaxdef / (2 * Math.PI * ymaxXz)); // normal Gaussian
+	else asigma = volBisMeth(ymaxXz, pflat, wmaxdef);  // get sigma estimate for generalized Gaussian
+
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			var fodmax = 0;
+			        var pl = 61;
+  
+				var dci  = 10 + nplants + pl;
+				var x1 = xpos[pl];
+				var z1 = zpos[pl];	
+				var x2 = iplane[ix][jz][3];	// x location of this element in metres
+				var z2 = iplane[ix][jz][4]; // z location of this element in metres
+				var sqrx = (x1 - x2) * (x1 - x2);
+				var sqrz = (z1 - z2) * (z1 - z2);
+				var d12 = Math.sqrt(sqrx + sqrz); // the distance to the plant
+				iplane[ix][jz][dci] = d12; // store the distance
+
+				// Gaussian model
+				var distarg = d12 / (rt2 * asigma);
+
+				// *p2
+				//var exparg = distarg * distarg;
+				var exparg = Math.pow(distarg * distarg, pflat);
+
+				var fod = 1.0 / Math.exp(exparg);
+				var fdi = 10 + pl;
+				iplane[ix][jz][fdi] = fod;
+				if (fod > fodmax) {fodmax = fod;}
+				// Extension for centre plant in 11 x 11 array...
+				// centre plant is number 61 therefore its fdi index = 61 + 10 = 71.
+				iplane[ix][jz][71] += fod;  // the increment to the sum of f(di)'s.
+				iplane[ix][jz][0] = 1;  // all to be included in computation				
+				if (fodmax < iplane[ix][jz][1]) {
+					myplotHEX(x2, z2, "#B0B0B0"); // mark limit of influence on central plant
+					}
+			}
+		}
+}
+
+// Same as defineAreas() but with fixed nmber of plants, fixed sigma and used only to obtain f(di)
+function defineAreasA() {
+	
+	// Calc and store the value of f(d) from each plant to the x-z iplane position (metres).
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			var fodmax = 0;
+			nplants = 121;
+			for (var pl = 1; pl < nplants + 1; pl++) {
+
+				var dci  = 10 + nplants + pl;
+				var x1 = xpos[pl];
+				var z1 = zpos[pl];	
+				var x2 = iplane[ix][jz][3];	// x location of this element in metres
+				var z2 = iplane[ix][jz][4]; // z location of this element in metres
+				var sqrx = (x1 - x2) * (x1 - x2);
+				var sqrz = (z1 - z2) * (z1 - z2);
+				var d12 = Math.sqrt(sqrx + sqrz); // the distance to the plant
+				iplane[ix][jz][dci] = d12; // store the distance
+				
+				// Gaussian model
+				var distarg = d12 / (rt2 * asigma);
+				//var exparg = -0.5 * distarg * distarg;
+
+				// *p3
+				//var exparg = distarg * distarg;
+				var exparg = Math.pow(distarg * distarg, pflat);
+
+				//var fod = Math.exp(exparg);
+				var fod = 1.0 / Math.exp(exparg);
+				var fdi = 10 + pl;
+				iplane[ix][jz][fdi] = fod;
+			
+				}
+			}
+		}
+	}
+
+// Evaluate the y-field (array) and obtain plant weights (v. similar to calcFieldD()
+function calcFieldA() {
+
+	defineAreasA();
+	
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if(iplane[ix][jz][0] == 1) {
+
+				// Find and store the distance function fod total and allocate the fod shares.
+	
+				// First find the total of shares (ie the fod total)
+				nplants = 121;  // Special 11 x 11 case
+				var totshare = 0;
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					//if (timeUnit < tstart[pl]) continue;
+					var fdi = 10 + pl;
+					totshare += iplane[ix][jz][fdi]; // local total of the distance functions f(d)
+					}
+				iplane[ix][jz][5] = totshare; // store the total of the distance functions fod
+				
+				var ymaxglob = ymaxXz; 
+				var fodtot = totshare;
+				if (YFmodel == 1) var ymax = ymaxglob - (ymaxglob / (yfc * fodtot + 1));
+				if (YFmodel == 2) var ymax = ymaxglob * (1 - Math.exp(-yfc * fodtot));
+				iplane[ix][jz][6] = ymax;  // store the local yield value for all the plants
+				iplane[ix][jz][9] = ymax;  // store the yields again for graphic output option
+				}
+			}
+		}
+
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if(iplane[ix][jz][0] == 1) {
+
+				// Next calculate the proportion of ymax for each plant proportional to the fod's
+				// fdi = The value of f(d) from the ith plant to location dxz in the interaction plane.
+				// dci  = The current ith pant component of the x-z cell's latest y-field value
+				// ymi = The ith plant's share of the x-z cell's latest y-field value 
+	
+				totshare = iplane[ix][jz][5]; // recover value from store
+				ymax = iplane[ix][jz][6]; // recover value from store
+
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;
+					var plantshare = 0;
+					if(totshare <= 0) totshare = Number.MIN_VALUE;  // Prevents NaN situation in array mode
+					var plantShare = iplane[ix][jz][fdi] * ymax / totshare;
+					//if (totshare > 0) var plantShare = iplane[ix][jz][fdi] * ymax / totshare;
+					//if (totshare !< 0) var plantShare = iplane[ix][jz][fdi] * ymax / totshare;
+ 					iplane[ix][jz][ymi] = plantShare;	
+					}
+
+				// Calculate the plant weights and store them.
+				// In interest of clarity this calculation is separated from the ymax loop above
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;
+					deltPlantWt = deltXzArea * iplane[ix][jz][ymi]; // plant weight increment
+					wtt[pl] += deltPlantWt;  // add increment to accumulating plant weight
+					}
+				}
+			}
+		}
+	//plantSeps();  // chect rect.
+
+	//Update the array user's table with newly calculated central yield and plant weight
+	var tb3   = document.getElementById("table3");
+	var awid = tb3.rows[4].cells[1].children[0].value
+	var alen = tb3.rows[5].cells[1].children[0].value
+	var cenYield = wtt[61] / (awid * alen);
+	tb3.rows[6].cells[1].children[0].value = cenYield.toFixed(3);
+	tb3.rows[7].cells[1].children[0].value = wtt[61].toFixed(3);
+	tb3.rows[8].cells[1].children[0].value = wtt[50].toFixed(3);
+	tb3.rows[9].cells[1].children[0].value = wtt[62].toFixed(3);
+
+	// Disable editing table entries thereby preventing inappropriate user changes after a run
+	for (var disrow = 0; disrow < 10; disrow++) {	
+		tb3.rows[disrow].cells[1].children[0].disabled = true;
+		var cellcolour = "black"
+		if (disrow == 7) cellcolour = "red";
+		tb3.rows[disrow].cells[1].children[0].style.color = cellcolour;
+		}
+
+	
+
+document.getElementById("runMessage").value = "Simulation completed";
+
+	var dnote = document.getElementById("delaynote");
+	dnote.style.color = "#C1B7A4";
+	var incl = document.getElementById("inclusion");
+	incl.style.color = "#000000";
+	
+	document.getElementById("button4").disabled = true; // Disable the start button
+	document.getElementById("button4").style.color = "gray";
+
+}
+
+//Plots a square of any hex colour with coordinates in metres  
+function myplotHEX(vi, vj, hstr) {
+	vi = vi * scale;
+	vj = vj * scale;
+	var xi = vi;
+	var zj = (400 - vj);
+	plane.fillStyle = hstr;		
+ 	plane.fillRect(xi-2, zj-2, 5, 5);
+}
+
+//Plots a 1-pixel dot of any rgb colour  See also hex version & 4-dot versions.  
+function plotRGB1(vi, vj, r, g, b) {
+	var hexcolor = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1,7);
+	var xi = vi * 2;
+	var zj = (400 - vj*2);
+	plane.fillStyle = hexcolor;		
+ 	plane.fillRect(xi, zj, 1, 1);
+}
+
+
+// ~ Routines for generalized Gaussian volume estimation of sigma ~
+
+function volBisMeth(yp, p, v) {
+
+	// First reset the matching parameter to suit new p value (yfc is global)
+	if (YFmodel == 1) yfc = -0.02616 * Math.pow(p, 2) + 0.9121 * p + 0.8367;
+	else              yfc = -0.03134 * Math.pow(p, 2) + 0.3945 * p + 0.9744;
+
+	// Then proceed with the sigma estimation ...
+
+	var x1    = 0.0;    // lower guesss of sigma
+	var x2    = 2.0;    // upper guesss of sigma
+	var E     = 0.0001; // iteration stopping criterion. i.e. (xn-1 - xn) / xn-1
+	
+	var myvol = minimize(x1, x2, yp, p, E, v) ;  // Note: return is a string
+	
+	var repmsg = "";
+
+	if (myvol.indexOf("racket") > -1) repmsg = myvol;
+
+	else {
+
+		var sigmest = Number(myvol);
+
+		if (sigmest > 0) {
+			return sigmest;  // the result
+			}
+		else {
+			if (repmsg == "") repmsg = "Gaussian volume convergence failure";
+			}
+		
+		}
+
+	repmsg += ".\nPlease restart with appropriate inputs."
+	alert(repmsg);
+	// Program aborted
+}
+
+
+function minimize(x1, x2, yp, p, E, v) {
+
+	// Numerical bisection method
+	// e.g. https://en.wikipedia.org/wiki/Bisection_method
+
+	var f1 = func(x1, p, v, yp);
+	var f2 = func(x2, p, v, yp);
+
+	var bracktest = f1 * f2;
+
+	if(bracktest > 0) {
+		return "Gaussian volume bracket guess failure";
+	}
+
+	var bisIters = 0;
+	var bisReport = 0;
+	for(var i=1; i<100; i++) {
+
+		bisIters++;
+		var x0 = (x1 + x2) / 2;
+		var f0 = func(x0, p, v, yp);
+	
+		if(f0 > 0) {
+			x2 = x0;
+		}
+		else {
+			x1 = x0;
+			f1 = f0;
+		}
+
+		var critest = Math.abs((x2 - x1) / x2);
+		if(critest < E) {
+	 		var root = (x1 + x2) / 2;
+			bisReport = 1;
+			break;
+		}
+	
+
+	}
+
+	if (bisReport == 1) {
+		var bismsg = "Finished.   "
+		var sigmsg = root.toString();
+	}
+	else {
+		bismsg = "Bisection covergence failure.   "
+		sigmsg = " ";
+	}
+	
+	return sigmsg;
+
+}
+
+function func(sigma, p, v, ypeak) {
+
+	// Numerical version of the analytical 'ring method' for volumes of revolution
+
+	var dx = 0.0014;
+	var  x = dx;
+	var volume = 0;
+	var ringcont = 0;
+	var critflag = 0;
+
+	for (var i=1; i<10000; i++) {
+
+		ringcont++;
+
+		//area of annular ring
+		var area = 2 * Math.PI * x * dx;
+        
+       		// height of annular cylinder
+		var fx = gauss(x, ypeak, sigma, p);
+
+		// volume of annualar ring (ie the volume increment)
+		var volincr = fx * area;
+	
+		// increment the volume
+		volume += volincr;
+
+		//increment the radius
+		x += dx;
+
+		if (volincr/volume < .000001) {
+			critflag = 1;
+			break;
+			}
+
+		}
+
+	var finalMessage = "";
+
+	if (critflag == 1) finalMessage += "Successful.  ";
+	else finalMessage += "FAILED!  ";
+
+	return volume - v;  // Offset v to give desired sigma instead of zero
+
+	}
+
+function gauss(x, Y, sigma, p) {
+
+	var exparg1 = x**2 / (2 * sigma**2);
+    	var exparg2 = Math.pow(exparg1, p);
+	var fx = Y * Math.exp(-exparg2);
+	return fx;
+
+	}
+
+// ~ End of Gaussian volume sigma estimation routines ~
+
+
+// THE CENTRAL COMPUTATIONS - iterate the spatial processing for one time unit (t)
+
+function setUpLoop() {
+	// In preparation for the processing below, insert the constant values and the y initial value in the x-z array.
+	// ( Note:  in future versions ymax may vary across the iplane to reflect local growing conditions. )
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+			if (iplane[ix][jz][0] == 1) {
+				iplane[ix][jz][7] = ymaxXz;  // Global y max
+				iplane[ix][jz][9] = yXz;
+				iplane[ix][jz][10] = dyXz;
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;
+					}
+				}
+			}
+		}
+	for (var i = 1; i < nplants + 1; i++) {
+		wtt[i] = wstart[i];
+		}
+	
+	updateTable();
+	
+	}
+
+function nonIntPl() {
+
+	// Evaluate logistic growth for non-interacting plants
+	for (var pl = 1; pl < nplants + 1; pl++) {
+
+		if (timeUnit >= tstart[pl]  && growlog[pl] == true) {
+			var dwni = wni[pl] * rgr[pl] * (W[pl] - wni[pl]) / W[pl];
+			wni[pl] += dwni;
+			}
+			wisol[pl] = wni[pl]; // some duplication here but elimination of it is awkward
+		}
+	}
+
+// Dynamic version of time loop
+function spaceRunD() {
+
+	// The plant weights derived from the y-field are renewed at each ...
+	// time unit therefore delete the previous ones here.	
+	for (var pl = 1; pl < nplants + 1; pl++) {	
+		wtt[pl] = 0.0;
+		}
+
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if (iplane[ix][jz][0] == 1) {
+
+				iplane[ix][jz][6] = 0.0;
+				iplane[ix][jz][9] = 0.0;
+				iplane[ix][jz][10] = 0.0;
+
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;
+					
+					iplane[ix][jz][ymi] = 0.0;
+
+					}
+				}	
+			}
+		}
+
+
+	// NB in current non-interacting plant weights are in wni[]
+
+	// Calculate distance functions f(di) for all the plants and x-z cells
+	var pi2 = 2 * Math.PI;
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if (iplane[ix][jz][0] == 1) {
+
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					if (timeUnit < tstart[pl]) continue;
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;					
+
+					// Gaussian model 
+					var d12 = iplane[ix][jz][dci]; // the distance
+					var sigsq = wni[pl] / (pi2 * iplane[ix][jz][7]);  // [7] is ymaxglob
+
+					// *p4
+					var exparg = Math.pow(d12 * d12 / (2 * sigsq), pflat);
+
+					//var exparg = d12 * d12 / (2 * sigsq);
+					var fod = 1.0 / Math.exp(exparg); // distance function
+					iplane[ix][jz][fdi] = fod;  // store the function result
+
+					}
+				}
+			}
+		}
+	calcFieldD();  // Compute the y-field
+	}
+
+
+// Evaluate the y-field (dynamic version) and obtain plant weights
+function calcFieldD() {
+	
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if(iplane[ix][jz][0] == 1) {
+
+				// Find and store the distance function fod total and allocate the fod shares.
+	
+				// First find the total of shares (ie the fod total)
+				var totshare = 0;
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					if (timeUnit < tstart[pl]) continue;
+					if(W[pl] <= 0) continue;
+					var fdi = 10 + pl;
+					totshare += iplane[ix][jz][fdi]; // local total of the distance functions f(d)
+					}
+				iplane[ix][jz][5] = totshare; // store the total of the distance functions fod
+				
+				var ymaxglob = ymaxXz; 
+				var fodtot = totshare;
+				if (YFmodel == 1) var ymax = ymaxglob - (ymaxglob / (yfc * fodtot + 1));
+				if (YFmodel == 2) var ymax = ymaxglob * (1 - Math.exp(-yfc * fodtot));
+				iplane[ix][jz][6] = ymax;  // store the local yield value for all the plants
+				iplane[ix][jz][9] = ymax;  // store the yields again for graphic output option
+				}
+			}
+		}
+
+	for (var ix = 0; ix < xdim; ix++) {
+		for (var jz = 0; jz < zdim; jz++) {
+
+			if(iplane[ix][jz][0] == 1) {
+
+				// Next calculate the proportion of ymax for each plant proportional to the fod's
+				// fdi = The value of f(d) from the ith plant to location dxz in the interaction plane.
+				// dci  = The current ith pant component of the x-z cell's latest y-field value
+				// ymi = The ith plant's share of the x-z cell's latest y-field value 
+	
+				totshare = iplane[ix][jz][5]; // recover value from store
+				ymax = iplane[ix][jz][6]; // recover value from store
+
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					if (timeUnit < tstart[pl]) continue;
+					if(W[pl] <= 0) continue;
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;					
+					var plantshare = 0;
+					if (totshare > 0) var plantShare = iplane[ix][jz][fdi] * ymax / totshare;
+ 					iplane[ix][jz][ymi] = plantShare;
+					}
+
+				// Calculate the plant weights and store them.
+				// In interest of clarity this calculation is separated from the ymax loop above
+				for (var pl = 1; pl < nplants + 1; pl++) {
+					if (timeUnit < tstart[pl]) continue;
+					if(W[pl] <= 0) continue;
+					var fdi = 10 + pl;
+					var dci  = 10 + nplants + pl;
+					var ymi = 10 + 2 * nplants + pl;
+					deltPlantWt = deltXzArea * iplane[ix][jz][ymi]; // plant weight increment
+					wtt[pl] += deltPlantWt;  // add increment to accumulating plant weight
+					}
+				}
+			}
+		}
+
+updateTable(); // copy new values to the visible user's table
+
+}
+
+// To be called when the array contents change during simulation
+function updateTable() {
+	for (var i = 1; i < nplants + 1; i++) {
+
+		// The y-field can give reverse growth of precocious plants therefore check ...
+		// setting to see if this is allowed.
+		if (allowReverse == false) {
+			var oldwt = Number(tbl.rows[i].cells[9].children[0].value); 
+			if (wtt[i] < oldwt && timeUnit > 10) {
+				wtt[i] = oldwt + 0.0;
+				growlog[i] = false;  // halt logistic growth for next time unit
+				}
+			else growlog[i] = true;
+			}
+
+		wtpc[i] = wtt[i] * 100 / wisol[i];
+		if (W[i] <= 0) {
+
+		wisol[i] = 0;
+		wtpc[i] = 0;
+
+		}
+		
+		if (W[i] <= 0) {
+			tbl.rows[i].cells[1].children[0].value = "0";  //Format for tidy output !
+			}
+		else tbl.rows[i].cells[1].children[0].value = W[i].toFixed(3);
+		tbl.rows[i].cells[2].children[0].value = rgr[i].toFixed(3);
+		tbl.rows[i].cells[3].children[0].value = wisol[i].toFixed(3);
+		tbl.rows[i].cells[4].children[0].value = wtpc[i].toFixed(dp);
+		tbl.rows[i].cells[5].children[0].value = xpos[i].toFixed(3);
+		tbl.rows[i].cells[6].children[0].value = zpos[i].toFixed(3);
+		tstart[i] = tstartmem[i]; // tstart patch part 2
+		tbl.rows[i].cells[7].children[0].value = tstart[i].toFixed(0);
+		tbl.rows[i].cells[8].children[0].value = wstart[i].toFixed(4);
+		tbl.rows[i].cells[9].children[0].value = wtt[i].toFixed(4);
+		if (tbl.rows[i].cells[9].children[0].value == "NaN") {
+			//Very low starting values cause anomaly so ...
+			tbl.rows[i].cells[9].children[0].value = ". . .";
+			tbl.rows[i].cells[4].children[0].value = ". . .";
+			}
+		}
+}
+
+function report() {
+
+	var ymi1 = 10 + 2 * nplants + 1;
+	var fdi1 = 10 + 1 * nplants + 1;
+
+	var rep = "ERROR.  A calculated plant weight is not a true number (JS NaN.)\n";
+	rep += "Possibly the your combination of inputs is extreme or invalid.\n";
+ 	rep += "Possibly the script is corrupted so obtain an authentic fresh copy.\n\n";
+	rep += "timeUnit = " + timeUnit + "\n";
+	rep += "deltXzArea = " + deltXzArea + "\n";
+	rep += "deltPlantWt = " + deltPlantWt + "\n";
+	rep += "wtt[1] = " + wtt[1] + "\n";
+	rep += "iplane[ix][jz][ymi1] = " + iplane[ix][jz][ymi1] + "\n";
+	rep += "iplane[ix][jz][fdi1] = " + iplane[ix][jz][fdi1] + "\n";
+
+	alert(rep);
+}
+
+function badwstart(theWt) {
+
+	var msg = "";
+	msg += "The minimum accepted starting weight is " + minstartwt.toString() + " Kg.\n";
+	msg += "for this version of the simulator.\n";
+	msg += "Your weight of " + theWt.toString() + " Kg is therefore too small.\n";
+	msg += "Please abandon this run and restart the program.";
+	alert(msg);
+
+}
+
+
+/*--- THE DOWNLOAD CODE --- */
+
+
+// Note:  this code may be edited acording to the data required (see comments below)
+function dlstart() {
+
+//var subset = 1;
+
+var text2file = "";   //  Use for entire field data
+var sectA2file = "";  //  Use for section accross field (single line of data)
+
+
+for (var ix = 0; ix < xdim ; ix++) {
+		for (var jz = 0; jz < zdim ; jz++) {
+
+				var ytemp = iplane[jz][ix][9]; // Same orientation as i-plane image
+				//var ytemp = iplane[ix][jz][9]; // Right angles to i-plane image
+
+				if (jz == 100) {
+				sectA2file += ix.toString();
+				sectA2file += "\t";
+
+				// Option - edit as required (also edit at ** below)
+				sectA2file += (iplane[ix][jz][9]).toFixed(4); // Final Y-field all plants
+				//plotRGB1(ix, jz, 255, 0, 0);  // Show on i-plane screen
+
+				// Option - edit as required (also edit at ## below)
+				//sectA2file += (iplane[ix][jz][10 + 2]).toFixed(4); // Pre-Y-field single plant
+
+				sectA2file += " \n";
+					}
+
+				if (jz < zdim -1) {
+					text2file += ytemp.toFixed(4) + ",";  // One datum plus separator
+					}
+				else {
+					text2file += ytemp.toFixed(4) + "\n";  // End of one data line
+					}
+			}
+	}
+
+
+
+var isIE = /*@cc_on!@*/false || !!document.documentMode; //  Trap Internet Explorer 6-11
+
+if (!isIE) {
+	var datfile = document.getElementById("inputFName").value;
+
+	// ** Edit to match option above
+	download(text2file, datfile, "text-plain"); // 2D (for contours etc)
+
+	// ## Edit to match option above
+	//download(sectA2file, datfile, "text-plain"); // Section accross pre-Y-field
+
+	alert("Download process finished");
+	}
+else {
+	var dlermsg = ""
+	dlermsg += "Sorry!  This facility does not currently work with Internet Explorer.\n";
+	dlermsg += "Please use Chrome for downloads."
+	alert(dlermsg);
+	}
+}
+
+// Download data file
+function download(data, filename, type) {
+    var file = new Blob([data], {type: type});
+        var a = document.createElement("a"),
+        url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);  
+        }, 0);
+}
+
+</script>
+
+
+</body>
+
+</html>
